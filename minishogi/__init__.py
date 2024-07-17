@@ -1,0 +1,1 @@
+import minishogi.minishogi
