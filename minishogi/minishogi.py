@@ -107,8 +107,6 @@ PTYPE_SHORT_DIRECTIONS: dict[int, list[tuple[int, int]]] = {
 for ptype in [SILVER, PAWN]:
     PTYPE_SHORT_DIRECTIONS[promote(ptype)] = PTYPE_SHORT_DIRECTIONS[GOLD]
 
-PIECE_SHORT_DIRECTIONS: dict[int, list[tuple[int, int]]] = {}
-
 PTYPE_LONG_DIRECTIONS: dict[int, list[tuple[int, int]]] = {
     ROOK : [N, S, E, W],
     BISHOP : [NE, NW, SW, SE],
@@ -383,29 +381,50 @@ class Position:
         return True
     def can_capture_op_king(self):
         return self.in_check(-self.side_to_move)
+    def illegal(self):
+        return not self.legal_pawn_positions() or self.can_capture_op_king()
     def __str__(self):
         return f'Position{(self.side_to_move, self.board, self.hands, self.check_count, self.nmoves)}'
-
-
-
-
-
-
 # ## 一手前の局面をすべて作成する generate_previous_positions
 
-# In[ ]:
+def king_checkmate_pawn(pos: Position, y, x):
+    player = pos.side_to_move
+    dy, dx = PIECE_SHORT_DIRECTIONS[piece][0]
+    ny, nx = y + dy, x + dx
+    if not is_on_board(nx, ny) or pos.board[ny][nx] != ptype2piece(player, KING):
+        return False
+    return pos.in_checkmate()
 
 
-def generate_previous_positions(pos: Position):
-    previous_positions = []
-    current_player = pos.side_to_move
-    previous_player = -current_player
-
+def generate_previous_moves(pos: Position):
+    player = pos.side_to_move
+    opp = -player
+    moves = []
     for y in range(5):
         for x in range(5):
             piece = pos.board[y][x]
-            if not is_opposite(piece, current_player):
+            if piece * opp <= 0:
                 continue
+            ptype = piece2ptype(piece)
+            if not is_promoted(ptype):
+                if ptype != PAWN or not king_checkmate_pawn(pos, y, x):
+                    moves.append(Move.make_drop_move(piece, (y, x)))
+            for dy, dx in PIECE_LONG_DIRECTIONS[piece]:
+                ny, nx = y - dy, x - dx
+                while is_on_board(ny, nx) and pos.board[ny][nx] == BLANK:
+                    moves.append(Move((ny, nx), (y, x), False))
+                    if is_promoted(ptype) and (can_promote_y(player, y) or can_promote_y(player, ny)):
+                        moves.append(Move((ny, nx), (y, x), True))
+                    ny -= dy
+                    nx -= dx
+            for dy, dx in PIECE_SHORT_DIRECTIONS[piece]:
+                ny, nx = y - dy, x - dx
+                if not is_on_board(ny, nx) or pos.board[ny][nx] != BLANK: continue
+                moves.append(Move((ny, nx), (y, x), False))
+                if is_promoted(ptype) and (can_promote_y(player, y) or can_promote_y(player, ny)):
+                    moves.append(Move((y, x), (ny, nx), True))
+    return moves
+
 
 
     return previous_positions

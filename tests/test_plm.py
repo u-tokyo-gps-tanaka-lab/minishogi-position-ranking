@@ -10,8 +10,8 @@ def test_plm():
         assert m in moves
     for m in moves:
         assert m in sf_moves
-    pos = Position('r2gk/P4/5/5/KG1R1[Pbbss] b 0 1')
-    moves_str = 'a5a4 a5b5 a5c5 d5c4 d5d4 d5e4 d5c5 B@c1 B@e1 B@a2 B@b2 B@c2 B@d2 B@e2 B@a3 B@b3 B@c3 B@d3 B@e3 B@b4 B@c4 B@d4 B@e4 B@b5 B@c5 S@c1 S@e1 S@a2 S@b2 S@c2 S@d2 S@e2 S@a3 S@b3 S@c3 S@d3 S@e3 S@b4 S@c4 S@d4 S@e4 S@b5 S@c5 e5e4'
+    pos = Position('r2gk/P4/5/5/KGR2[Pbbss] b 0 1')
+    moves_str = 'a5a4 a5b5 a5c5 d5c4 d5d4 d5e4 d5c5 B@d1 B@e1 B@a2 B@b2 B@c2 B@d2 B@e2 B@a3 B@b3 B@c3 B@d3 B@e3 B@b4 B@c4 B@d4 B@e4 B@b5 B@c5 S@d1 S@e1 S@a2 S@b2 S@c2 S@d2 S@e2 S@a3 S@b3 S@c3 S@d3 S@e3 S@b4 S@c4 S@d4 S@e4 S@b5 S@c5 e5d4 e5e4'
     sf_moves = set(Move.from_uci(x) for x in moves_str.split())
     moves = set(pos.plm(-1))
     for m in sf_moves:
