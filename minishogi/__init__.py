@@ -1,1 +1,1 @@
-import minishogi.minishogi
+from minishogi.minishogi import Position

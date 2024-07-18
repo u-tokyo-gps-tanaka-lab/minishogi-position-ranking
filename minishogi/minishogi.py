@@ -118,12 +118,11 @@ for ptype, ds in PTYPE_SHORT_DIRECTIONS.items():
     PIECE_LONG_DIRECTIONS[-ptype] = []
     for y, x in lds:
         PIECE_LONG_DIRECTIONS[-ptype].append((-y, -x))    
-
-
-
-
-
-
+def color2c(color):
+    if color < 0:
+        return 'b'
+    else:
+        return 'w'
 class Position:
     # 実際にはfenは2つ目以上のフィールドを省略できるが，ここでは4に決め打ちする
     def __init__(self, fen="rbsgk/4p/5/P4/KGSBR[-] w 0 1"):
@@ -184,7 +183,7 @@ class Position:
         for p in range(2):
             for piece in self.hands[p]:
                 hands.append(piece2str(piece))
-        return f'{b}[{"".join(hands)}] w 0 1'
+        return f'{b}[{"".join(hands)}] {color2c(self.side_to_move)} {self.check_count} {self.nmoves}'
 
     def __str__(self):
         return f'Position{(self.side_to_move, self.board, self.hands, self.check_count, self.nmoves)}'
