@@ -46,6 +46,8 @@ def piece2str(pt):
 # if promoted ptype  | 8
 def promote(ptype):
     return ptype | 8
+def unpromote(ptype):
+    return ptype & 7
 
 def is_promoted(ptype):
     return (ptype & 8) != 0
@@ -70,6 +72,8 @@ def is_opposite(piece, player):
 # piece type
 def piece2ptype(piece):
     return abs(piece)
+def ptype2piece(player, ptype):
+    return player * ptype
 
 def is_on_board(y, x):
     return 0 <= x < 5 and 0 <= y < 5
@@ -143,7 +147,26 @@ def color2c(color):
         return 'w'
 
 # square は (y, x) の順で指定する．
-# drop move は (10, piece) で指定する．
+# drop move は (10, ptype) で指定する．
+
+def s2sq(s):
+    assert len(s) == 2
+    if s[1] == '@':
+        i = ptype_chars.index(s[0].lower())
+        if s[0].islower():
+            i = -i
+        return (Move.DROP_Y, i)
+    assert 'a' <= s[0] <= 'e'
+    x = ord(s[0]) - ord('a')
+    assert '1' <= s[1] <= '5'
+    y = 5 - int(s[1])
+    return (y, x)
+def sq2s(sq):
+    y, x = sq
+    if y == Move.DROP_Y:
+        c = ptype_chars[piece2ptype(x)].upper()
+        return f'{c}@'
+    return f'{"abcde"[x]}{"54321"[y]}'
 class Move:
     DROP_Y = 10
     def __init__(self, from_sq, to_sq, is_promote):
@@ -156,12 +179,28 @@ class Move:
         return self.__str__()
     def make_drop_move(piece, to_sq):
         return Move((Move.DROP_Y, piece), to_sq, False)
+    def from_uci(s):
+        assert len(s) in [4, 5]
+        from_sq, to_sq = s2sq(s[:2]), s2sq(s[2:4])
+        is_promote = len(s) == 5 and s[4] == '+'
+        return Move(from_sq, to_sq, is_promote)
+    def to_uci(self):
+        return sq2s(self.from_sq) + sq2s(self.to_sq) + ('+' if self.is_promote else '')
     def is_drop(self):
         return self.from_sq[0] == Move.DROP_Y
+    def __hash__(self):
+        return hash((self.from_sq, self.to_sq, self.is_promote))
+    def __eq__(self, other):
+        return self.from_sq == other.from_sq and self.to_sq == other.to_sq and self.is_promote == other.is_promote
+# fairy-stockfish では UCI::move でMoveからStringに変換する．
+
 
 class Position:
     # 実際にはfenは2つ目以上のフィールドを省略できるが，ここでは4に決め打ちする
-    def __init__(self, fen="rbsgk/4p/5/P4/KGSBR[-] w 0 1"):
+    def __init__(self, fen="rbsgk/4p/5/P4/KGSBR[-] w 0 1", tdata=None):
+        if fen == '' and tdata is not None:
+            self.board, self.hands, self.side_to_move, self.check_count, self.nmoves = tdata
+            return
         fenParts = fen.split(' ')
         if len(fenParts) != 4:
             raise 'fen format error'
@@ -220,20 +259,7 @@ class Position:
             for piece in self.hands[p]:
                 hands.append(piece2str(piece))
         return f'{b}[{"".join(hands)}] {color2c(self.side_to_move)} {self.check_count} {self.nmoves}'
-    def legal_pawn_positions(self):
-        # 二歩
-        for x in range(5):
-            if sum(self.board[y][x] == PAWN for y in range(5)) > 1:
-                return False
-            if sum(self.board[y][x] == -PAWN for y in range(5)) > 1:
-                return False
-        # 行きどころのない歩
-        for x in range(5):
-            if self.board[0][x] == PAWN:
-                return False
-            if self.board[4][x] == -PAWN:
-               return False
-        return True
+
     def can_move_on(self, player, y, x):
         return self.board[y][x] * player <= 0
 
@@ -260,17 +286,18 @@ class Position:
                     moves.append(Move((y, x), (ny, nx), False))
                 if can_promote_ptype(ptype) and (can_promote_y(player, y) or can_promote_y(player, ny)):
                     moves.append(Move((y, x), (ny, nx), True))
-            if self.board[ny][nx] != BLANK:
-                break
     def all_drop_moves(self, moves, player):
         all_hand_piece = set(self.hands[player2offset(player)])
         if len(all_hand_piece) == 0:
             return
-        for y in range(5):
-            for x in range(5):
+        for x in range(5):
+            xpawncount = sum(self.board[y][x] == ptype2piece(player, PAWN) for y in range(5))
+            for y in range(5):
+                if self.board[y][x] != BLANK:
+                    continue
                 for p in all_hand_piece:
-                    if not(p == PAWN and can_promote_y(player, y)):
-                        moves.append(Move.make_drop_move(p, (y, x)))
+                    if not(p == PAWN and (xpawncount == 1 or can_promote_y(player, y))):
+                        moves.append(Move.make_drop_move(piece2ptype(p), (y, x)))
 
     def plm(self, player):
         moves = []
@@ -282,110 +309,73 @@ class Position:
         self.all_drop_moves(moves, player)
         print(f'moves={moves}')
         return moves
+    def king_pos(self, player):
+        kp = ptype2piece(player, KING)
+        for y in range(5):
+            for x in range(5):
+                if self.board[y][x] == kp:
+                    return (y, x)
+        return (-1, -1)                
+    def in_check(self, player):
+        kingpos = self.king_pos(player)
+        op = -player
+        moves = self.plm(op)
+        for m in moves:
+            if m.to_sq == kingpos:
+                return True
+        return False 
+    def apply_move(self, player, move):
+        new_board = list(list(l) for l in self.board)
+        new_hands = list(list(l) for l in self.hands)
+        to_sq = move.to_sq
+        to_y, to_x = to_sq
+        oldp = self.board[to_y][to_x]
+        from_sq = move.from_sq
+        pi = player2offset(player)
+        if move.is_drop():
+            ptype = from_sq[1]
+            drop_piece = ptype2piece(player, ptype)
+            new_board[to_y][to_x] = drop_piece
+            new_hands[pi].remove(drop_piece)
+        else:
+            from_y, from_x = from_sq
+            piece = self.board[from_y][from_x]
+            if move.is_promote:
+                piece = promote(piece)
+            new_board[to_y][to_x] = piece
+            new_board[from_y][from_x] = BLANK
+            if oldp != BLANK:
+                new_hands[pi].append(ptype2piece(player, unpromote(piece2ptype(oldp))))
+                new_hands[pi].sort()
+        return Position(fen='', tdata=(new_board, new_hands, -player, 0, self.nmoves + 1))
+    def in_checkmate(self):
+        player = self.side_to_move
+        op = -player
+        if not self.in_check(player):
+            return False
+        for m in self.plm(player):
+            pos1 = self.apply_move(player, m)
+            if not pos1.can_capture_op_king():
+                return False
+        return True            
+    def legal_pawn_positions(self):
+        # 二歩
+        for x in range(5):
+            if sum(self.board[y][x] == PAWN for y in range(5)) > 1:
+                return False
+            if sum(self.board[y][x] == -PAWN for y in range(5)) > 1:
+                return False
+        # 行きどころのない歩
+        for x in range(5):
+            if self.board[0][x] == PAWN:
+                return False
+            if self.board[4][x] == -PAWN:
+               return False
+        return True
+    def can_capture_op_king(self):
+        return self.in_check(-self.side_to_move)
     def __str__(self):
         return f'Position{(self.side_to_move, self.board, self.hands, self.check_count, self.nmoves)}'
-
-
-
-
-# other pieces
-def plm_for_walker(pos: Position, player, piece, y, x):
-    pseudo_legal_moves = []
-    from_sq = (y, x)
-
-    for dy, dx in PIECE_DIRECTIONS[player * piece]:
-        to_sq = (y + dy, x + dx)
-        if not is_on_board(y + dy, x + dx):
-            continue
-
-        to_sq_piece = pos.board[y + dy][x + dx]
-        if PAWN == piece2ptype(piece):
-            # 進む先が最上段なら成るしかない
-            if y + dy == ZONE_Y_AXIS[player]:
-                pseudo_legal_moves.append({'type': 'quiet', 'from': from_sq, 'to': to_sq, 'promote': True})
-                if to_sq_piece != BLANK:
-                    pseudo_legal_moves.append({'type': 'capture', 'from': from_sq, 'to': to_sq, 'promote': True, 'capture': to_sq_piece})
-            else: # 進む先が最上段でないなら成らない
-                pseudo_legal_moves.append({'type': 'quiet', 'from': from_sq, 'to': to_sq, 'promote': False})
-                if to_sq_piece != BLANK:
-                    pseudo_legal_moves.append({'type': 'capture', 'from': from_sq, 'to': to_sq, 'promote': False, 'capture': to_sq_piece})
-            continue
-
-        if to_sq_piece == BLANK:
-            pseudo_legal_moves.append({'type': 'quiet', 'from': from_sq, 'to': to_sq, 'promote': False})
-            if y + dy == ZONE_Y_AXIS[player]:
-                pseudo_legal_moves.append({'type': 'quiet', 'from': from_sq, 'to': to_sq, 'promote': True})
-                # 後ろに下がって成る動きは？
-            continue
-
-        if is_opposite(to_sq_piece, player):
-            pseudo_legal_moves.append({'type': 'capture', 'from': from_sq, 'to': to_sq, 'promote': False, 'capture': to_sq_piece})
-            # promotable
-            if y + dy == ZONE_Y_AXIS[player]:
-                pseudo_legal_moves.append({'type': 'capture', 'from': from_sq, 'to': to_sq, 'promote': True, 'capture': to_sq_piece})
-                # 後ろに下がって成る動きは？
-            continue
-
-    return pseudo_legal_moves
-
-# 二手・行きどころのない歩を考慮しない合法手
-# →行きどころのない歩は考慮すべき
-def generate_pseudo_legal_moves(pos: Position, player=SENTE):
-    pseudo_legal_moves = []
-    hands = pos.hands[0] if player == SENTE else pos.hands[1]
-
-    # drop move
-    for hand_piece in hands:
-        for x in range(5):
-            for y in range(5):
-                to_sq_piece = pos.board[y][x]
-                if to_sq_piece == BLANK:
-                    pseudo_legal_moves.append({'type': 'drop', 'to': (y, x), 'piece': hand_piece})
-        # 重複している持ち駒の考慮は？
-
-    # quiet/capture moves
-    for y in range(5):
-        for x in range(5):
-            piece = pos.board[y][x]
-            if piece == BLANK:
-                continue
-            elif is_opposite(piece, player):
-                continue
-
-            if (
-                piece2ptype(piece) == ROOK or
-                piece2ptype(piece) == BISHOP or
-                piece2ptype(piece) == promote(ROOK) or
-                piece2ptype(piece) == promote(BISHOP)
-            ):
-                pseudo_legal_moves.extend(plm_for_rider(pos, player, piece, y, x))
-            else:
-                pseudo_legal_moves.extend(plm_for_walker(pos, player, piece, y, x))
-
-    return pseudo_legal_moves
-
-def apply_move(pos: Position, move):
-    new_pos = copy.deepcopy(pos) # deep copyを自分で書いたほうが安全
-
-    to_y, to_x = move['to']
-
-    if move['type'] == 'drop':
-        new_pos.board[to_y][to_x] = move['piece']
-        if move['piece'] > 0:
-            new_pos.hands[0].remove(move['piece'])
-        else:
-            new_pos.hands[1].remove(move['piece'])
-
-    # type == 'quiet' or 'capture'
-    from_y, from_x = move['from']
-    new_pos.board[to_y][to_x] = new_pos.board[from_y][from_x] if move['promote'] == False else promote(new_pos.board[from_y][from_x])
-    new_pos.board[from_y][from_x] = BLANK
-
-    new_pos.side_to_move *= -1
-
-    return new_pos
-
-
 
 
 # ## あるプレイヤが詰んでいるかどうか? -> 「直前の手が打ち歩詰め」を判定するためには必要 in_checkmate
@@ -400,8 +390,7 @@ def apply_move(pos: Position, move):
 # 3. これを繰り返す途中で一度でもTrueが返ってきたら，その時点でreturn False
 
 # In[ ]:
-def in_check(pos, player):
-    return False
+
 
 def is_checkmate(pos, player):
     if not in_check(pos, player):

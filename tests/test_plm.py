@@ -1,7 +1,20 @@
 import sys
-from minishogi import Position
+from minishogi import Position, Move
 
 def test_plm():
-    pos = Position('r2gk/4p/P4/5/KG2R[bbss] w 0 1')
-    moves = pos.plm(1)
-    assert moves == []
+    pos = Position('r2gk/P4/5/5/KG2R[Pbbss] w 0 1')
+    moves_str = 'e1c1 e1d1 e1e2 e1e3 e1e4 e1e5 e1e5+ a1b2 a4a5+ b1c1 b1a2 b1b2 b1c2 P@c1 P@d1 P@b2 P@c2 P@d2 P@e2 P@b3 P@c3 P@d3 P@e3 P@b4 P@c4 P@d4 P@e4 a1a2'
+    sf_moves = set(Move.from_uci(x) for x in moves_str.split())
+    moves = set(pos.plm(1))
+    for m in sf_moves:
+        assert m in moves
+    for m in moves:
+        assert m in sf_moves
+    pos = Position('r2gk/P4/5/5/KG1R1[Pbbss] b 0 1')
+    moves_str = 'a5a4 a5b5 a5c5 d5c4 d5d4 d5e4 d5c5 B@c1 B@e1 B@a2 B@b2 B@c2 B@d2 B@e2 B@a3 B@b3 B@c3 B@d3 B@e3 B@b4 B@c4 B@d4 B@e4 B@b5 B@c5 S@c1 S@e1 S@a2 S@b2 S@c2 S@d2 S@e2 S@a3 S@b3 S@c3 S@d3 S@e3 S@b4 S@c4 S@d4 S@e4 S@b5 S@c5 e5e4'
+    sf_moves = set(Move.from_uci(x) for x in moves_str.split())
+    moves = set(pos.plm(-1))
+    for m in sf_moves:
+        assert m in moves
+    for m in moves:
+        assert m in sf_moves
