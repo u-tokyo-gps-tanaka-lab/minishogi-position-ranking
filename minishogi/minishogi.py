@@ -348,6 +348,15 @@ class Position:
                 new_hands[pi].append(ptype2piece(player, unpromote(piece2ptype(oldp))))
                 new_hands[pi].sort()
         return Position(fen='', tdata=(new_board, new_hands, -player, 0, self.nmoves + 1))
+    # ## あるプレイヤが詰んでいるかどうか? -> 「直前の手が打ち歩詰め」を判定するためには必要 in_checkmate
+    # checkmateであるための必要十分条件:
+    # 1. 王手がかかっている
+    # 2. 王手を回避する合法手がない
+    # 
+    # 合法手がないことはどう書けばいいか？
+    # 1. 自分の駒を動かす
+    # 2. 動かした後のposでin_checkを呼ぶ
+    # 3. これを繰り返す途中で一度でもTrueが返ってきたら，その時点でreturn False
     def in_checkmate(self):
         player = self.side_to_move
         op = -player
@@ -378,34 +387,7 @@ class Position:
         return f'Position{(self.side_to_move, self.board, self.hands, self.check_count, self.nmoves)}'
 
 
-# ## あるプレイヤが詰んでいるかどうか? -> 「直前の手が打ち歩詰め」を判定するためには必要 in_checkmate
 
-# checkmateであるための必要十分条件:
-# 1. 王手がかかっている
-# 2. 王手を回避する合法手がない
-# 
-# 合法手がないことはどう書けばいいか？
-# 1. 自分の駒を動かす
-# 2. 動かした後のposでin_checkを呼ぶ
-# 3. これを繰り返す途中で一度でもTrueが返ってきたら，その時点でreturn False
-
-# In[ ]:
-
-
-def is_checkmate(pos, player):
-    if not in_check(pos, player):
-        return False
-
-    legal_moves = generate_pseudo_legal_moves(pos, player)
-    if legal_moves == None:
-        return True
-
-    for move in legal_moves:
-        new_pos = apply_move(pos, move)
-        if not in_check(new_pos, player):
-            return False  # 王手を解消できる合法手がある場合
-
-    return True
 
 
 
