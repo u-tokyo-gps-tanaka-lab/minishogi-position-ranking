@@ -79,7 +79,15 @@ for pos in pawnOK:
     else:
         checkOK.append(pos)
 print(f'checkNG={len(checkNG)}, checkOK={len(checkOK)}')
-print(f'checkNG[:10] = {[pos.fen() for pos in checkNG[:10]]}')        
+print(f'checkNG[:10] = {[pos.fen() for pos in checkNG[:10]]}')     
+
+with open('checkOK.txt', 'w') as wf:
+    for pos in checkOK:
+        wf.write(pos.fen() + '\n')
+with open('checkNG.txt', 'w') as wf:
+    for pos in checkNG:
+        wf.write(pos.fen() + '\n')
+
 # no prev state
 prevOK = []
 prevNG = []
@@ -98,6 +106,14 @@ print(f'prevOK[:10] = {[pos.fen() for pos in prevOK[:10]]}')
 
 print(f'prevNGnocheck={len(prevNGnocheck)}')
 print(f'prevNGnocheck[:10] = {[pos.fen() for pos in prevNGnocheck[:10]]}') 
+
+with open('prevOK.txt', 'w') as wf:
+    for pos in prevOK:
+        wf.write(pos.fen() + '\n')
+with open('prevNG.txt', 'w') as wf:
+    for pos in prevNG:
+        wf.write(pos.fen() + '\n')
+
 
 reachOK = []
 reachNG = []
