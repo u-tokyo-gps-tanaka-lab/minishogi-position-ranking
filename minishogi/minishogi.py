@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+from collections import defaultdict
+
 # # 55将棋を定義する
 # 
 # piece については，
@@ -46,8 +48,16 @@ def piece2str(pt):
 # if promoted ptype  | 8
 def promote(ptype):
     return ptype | 8
+def promote_piece(piece):
+    if piece < 0:
+        return -promote(-piece)
+    return promote(piece)
 def unpromote(ptype):
     return ptype & 7
+def unpromote_piece(piece):
+    if piece < 0:
+        return -unpromote(-piece)
+    return unpromote(piece)
 
 def is_promoted(ptype):
     return (ptype & 8) != 0
@@ -175,8 +185,8 @@ class Move:
         return f'Move({self.from_sq, self.to_sq, self.is_promote})'
     def __repr__(self):
         return self.__str__()
-    def make_drop_move(piece, to_sq):
-        return Move((Move.DROP_Y, piece), to_sq, False)
+    def make_drop_move(ptype, to_sq):
+        return Move((Move.DROP_Y, ptype), to_sq, False)
     def from_uci(s):
         assert len(s) in [4, 5]
         from_sq, to_sq = s2sq(s[:2]), s2sq(s[2:4])
@@ -232,9 +242,33 @@ class Position:
                 self.hands[1].append(-i)
             else:
                 self.hands[0].append(i)
+        for i in range(2):
+            self.hands[i].sort(key=lambda x: abs(x))
         self.side_to_move = 1 if fenParts[1] == 'w' else -1
         self.check_count = int(fenParts[2])
         self.nmoves = int(fenParts[3])
+    # 駒の数の合計数が正しいことを確認する．
+    # 双方のkingが盤上にあることを確認する．
+    def is_consistent(self):
+        piececount = defaultdict(int)
+        for y in range(5):
+            for x in range(5):
+                piececount[self.board[y][x]] += 1
+        if piececount[KING] != 1 or piececount[-KING] != 1:
+            return False
+        for pi in range(2):
+            for piece in self.hands[pi]:
+                if piece * (1 - pi * 2) <= 0:
+                    return False
+                piececount[piece] += 1
+        basecount = defaultdict(int)                
+        for piece, v in piececount.items():
+            basecount[unpromote(piece2ptype(piece))] += v
+        #print(f'piececount={piececount}, basecount={basecount}')
+        for ptype in range(KING, PAWN + 1):
+            if basecount[ptype] != 2:
+                return False
+        return True            
 
     def fen(self):
         b = []
@@ -254,6 +288,7 @@ class Position:
         b = '/'.join(b)
         hands = []
         for p in range(2):
+            self.hands[p].sort(key=lambda x: abs(x))
             for piece in self.hands[p]:
                 hands.append(piece2str(piece))
         return f'{b}[{"".join(hands)}] {color2c(self.side_to_move)} {self.check_count} {self.nmoves}'
@@ -305,7 +340,7 @@ class Position:
                 if player * piece > 0:
                     self.plm_piece(moves, player, piece2ptype(piece), y, x)
         self.all_drop_moves(moves, player)
-        print(f'moves={moves}')
+        #print(f'moves={moves}')
         return moves
     def king_pos(self, player):
         kp = ptype2piece(player, KING)
@@ -339,13 +374,42 @@ class Position:
             from_y, from_x = from_sq
             piece = self.board[from_y][from_x]
             if move.is_promote:
-                piece = promote(piece)
+                piece = promote_piece(piece)
             new_board[to_y][to_x] = piece
             new_board[from_y][from_x] = BLANK
             if oldp != BLANK:
                 new_hands[pi].append(ptype2piece(player, unpromote(piece2ptype(oldp))))
-                new_hands[pi].sort()
+                new_hands[pi].sort(key=lambda x: abs(x))
         return Position(fen='', tdata=(new_board, new_hands, -player, 0, self.nmoves + 1))
+    def apply_unmove(self, player, move, oldpiece):
+        assert self.side_to_move == -player
+        new_board = list(list(l) for l in self.board)
+        new_hands = list(list(l) for l in self.hands)
+        to_sq = move.to_sq
+        to_y, to_x = to_sq
+        piece = self.board[to_y][to_x]
+        from_sq = move.from_sq
+        pi = player2offset(player)
+        if move.is_drop():
+            ptype = from_sq[1]
+            drop_piece = ptype2piece(player, ptype)
+            new_board[to_y][to_x] = BLANK
+            new_hands[pi].append(drop_piece)
+            new_hands[pi].sort(key=lambda x: abs(x))
+        else:
+            from_y, from_x = from_sq
+            piece = self.board[to_y][to_x]
+            if move.is_promote:
+                piece = unpromote_piece(piece)
+            new_board[to_y][to_x] = oldpiece
+            new_board[from_y][from_x] = piece
+            if oldpiece != BLANK:
+                oldptype = piece2ptype(oldpiece)
+                new_hands[player2offset(player)].remove(ptype2piece(player, unpromote(oldptype)))
+        pos1 = Position(fen='', tdata=(new_board, new_hands, player, 0, self.nmoves - 1))
+        assert pos1.is_consistent()
+        return pos1
+
     # ## あるプレイヤが詰んでいるかどうか? -> 「直前の手が打ち歩詰め」を判定するためには必要 in_checkmate
     # checkmateであるための必要十分条件:
     # 1. 王手がかかっている
@@ -388,10 +452,12 @@ class Position:
 # ## 一手前の局面をすべて作成する generate_previous_positions
 
 def king_checkmate_pawn(pos: Position, y, x):
-    player = pos.side_to_move
-    dy, dx = PIECE_SHORT_DIRECTIONS[piece][0]
+    assert piece2ptype(pos.board[y][x]) == PAWN
+    player = -pos.side_to_move
+    dy, dx = PIECE_SHORT_DIRECTIONS[ptype2piece(player, PAWN)][0]
     ny, nx = y + dy, x + dx
-    if not is_on_board(nx, ny) or pos.board[ny][nx] != ptype2piece(player, KING):
+    #print(f'ny, nx = {(ny, nx)}, player={player}')
+    if not is_on_board(nx, ny) or pos.board[ny][nx] != ptype2piece(-player, KING):
         return False
     return pos.in_checkmate()
 
@@ -406,14 +472,14 @@ def generate_previous_moves(pos: Position):
             if piece * opp <= 0:
                 continue
             ptype = piece2ptype(piece)
-            if not is_promoted(ptype):
+            if not is_promoted(ptype) and ptype != KING:
                 if ptype != PAWN or not king_checkmate_pawn(pos, y, x):
-                    moves.append(Move.make_drop_move(piece, (y, x)))
+                    moves.append(Move.make_drop_move(piece2ptype(piece), (y, x)))
             for dy, dx in PIECE_LONG_DIRECTIONS[piece]:
                 ny, nx = y - dy, x - dx
                 while is_on_board(ny, nx) and pos.board[ny][nx] == BLANK:
                     moves.append(Move((ny, nx), (y, x), False))
-                    if is_promoted(ptype) and (can_promote_y(player, y) or can_promote_y(player, ny)):
+                    if is_promoted(ptype) and (can_promote_y(opp, y) or can_promote_y(opp, ny)):
                         moves.append(Move((ny, nx), (y, x), True))
                     ny -= dy
                     nx -= dx
@@ -421,9 +487,41 @@ def generate_previous_moves(pos: Position):
                 ny, nx = y - dy, x - dx
                 if not is_on_board(ny, nx) or pos.board[ny][nx] != BLANK: continue
                 moves.append(Move((ny, nx), (y, x), False))
-                if is_promoted(ptype) and (can_promote_y(player, y) or can_promote_y(player, ny)):
-                    moves.append(Move((y, x), (ny, nx), True))
+            if is_promoted(ptype):
+                oldpiece = ptype2piece(opp, unpromote(ptype))
+                for dy, dx in PIECE_SHORT_DIRECTIONS[oldpiece]:
+                    ny, nx = y - dy, x - dx
+                    if can_promote_y(opp, y) or can_promote_y(opp, ny):
+                        moves.append(Move((ny, nx), (y, x), True))
     return moves
+
+def generate_previous_positions(pos: Position):
+    ret = []
+    moves = generate_previous_moves(pos)
+    #print(f'moves={moves}')
+    player = -pos.side_to_move
+    pi = player2offset(player)
+    hands = set(pos.hands[pi] + [BLANK])
+    for m in moves:
+        if m.is_drop():
+            pos1 = pos.apply_unmove(player, m, BLANK)
+            if not pos1.illegal():
+                ret.append(pos1)
+        else:
+            for captured_piece in hands:
+                ptype = piece2ptype(captured_piece)
+                pos1 = pos.apply_unmove(player, m, ptype2piece(-player, ptype))
+                if not pos1.illegal():
+                    ret.append(pos1)
+                if ptype != BLANK and can_promote_ptype(ptype):
+                    pos1 = pos.apply_unmove(player, m, ptype2piece(-player, promote(ptype)))
+                    if not pos1.illegal():
+                        ret.append(pos1)
+                
+    return ret                    
+
+
+
 
 
 
