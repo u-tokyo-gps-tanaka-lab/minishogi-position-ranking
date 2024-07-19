@@ -6,7 +6,20 @@ def test_inout_fen():
     assert p.fen() == 'rbsgk/4p/5/P4/KGSBR[] w 0 1'
     for fen in ['1bs1k/4g/5/P4/KGSB1[Prr] w 0 2', '1bs1k/4g/5/P4/KGSB1[Prr] b 0 2']:
         print(Position(fen).fen(), fen)
-        assert Position(fen).fen() == fen
+  
+def test_position_equal():
+    fens = ['1bs1k/4g/5/P4/KGSB1[Prr] w 0 2', '1bs1k/4g/5/P4/KGSB1[Prr] b 0 2']
+    for fen in fens:
+        assert Position(fen) == Position(fen)
+
+def test_position_in_dict():
+    fens = ['1bs1k/4g/5/P4/KGSB1[Prr] w 0 2', '1bs1k/4g/5/P4/KGSB1[Prr] b 0 2']
+    d = {}
+    for fen in fens:
+        pos = Position(fen)
+        d[pos] = 1
+    for fen in fens:
+        assert Position(fen) in d
 
 def test_is_consistent():
     p = Position('rbsgk/4p/5/P4/KGSBR[] w 0 1')

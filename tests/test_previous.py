@@ -22,8 +22,13 @@ def test_generate_previous_moves():
     # 直前の手が打ち歩詰めになる手は生成しない
     pos = Position('r2gk/P4/1+r3/p2+s1/K1G2[bbs] w 0 1')
     moves = set(generate_previous_moves(pos))
-    print(f'moves={moves}')
+    #print(f'moves={moves}')
     assert Move.from_uci('P@a2') not in moves
+    # 探索中に見つかったもの
+    pos = Position('SR1+r1/BSk1G/5/b1K+pG/+p4[] w 0 1')
+    moves = set(generate_previous_moves(pos))
+    print(f'moves={moves}')
+    assert Move.from_uci('a2a1+') not in moves
 
 def test_generate_previous_positions():
     pos = Position('r2gk/P4/5/3+s+r/KG3[Pbbs] w 0 1')

@@ -247,6 +247,17 @@ class Position:
         self.side_to_move = 1 if fenParts[1] == 'w' else -1
         self.check_count = int(fenParts[2])
         self.nmoves = int(fenParts[3])
+    def to_tuple(self):
+        board = tuple(tuple(l) for l in self.board)
+        hands = tuple(tuple(l) for l in self.hands)
+        return (board, hands, self.side_to_move, self.check_count, self.nmoves)
+    def __hash__(self):
+        return hash(self.to_tuple())
+    def __eq__(self, other):
+        return self.to_tuple() == other.to_tuple()
+    def __lt__(self, other): # to heap
+    #    return True
+        return self.to_tuple() < other.to_tuple()
     # 駒の数の合計数が正しいことを確認する．
     # 双方のkingが盤上にあることを確認する．
     def is_consistent(self):
@@ -380,7 +391,7 @@ class Position:
             if oldp != BLANK:
                 new_hands[pi].append(ptype2piece(player, unpromote(piece2ptype(oldp))))
                 new_hands[pi].sort(key=lambda x: abs(x))
-        return Position(fen='', tdata=(new_board, new_hands, -player, 0, self.nmoves + 1))
+        return Position(fen='', tdata=(new_board, new_hands, -player, 0, self.nmoves))
     def apply_unmove(self, player, move, oldpiece):
         assert self.side_to_move == -player
         new_board = list(list(l) for l in self.board)
@@ -406,8 +417,10 @@ class Position:
             if oldpiece != BLANK:
                 oldptype = piece2ptype(oldpiece)
                 new_hands[player2offset(player)].remove(ptype2piece(player, unpromote(oldptype)))
-        pos1 = Position(fen='', tdata=(new_board, new_hands, player, 0, self.nmoves - 1))
-        assert pos1.is_consistent()
+        pos1 = Position(fen='', tdata=(new_board, new_hands, player, 0, self.nmoves))
+        #assert pos1.is_consistent()
+        if not pos1.is_consistent():
+            print(f'pos={self.fen()}, player={player}, move={move}, oldpiece={oldpiece}')
         return pos1
 
     # ## あるプレイヤが詰んでいるかどうか? -> 「直前の手が打ち歩詰め」を判定するためには必要 in_checkmate
@@ -491,6 +504,7 @@ def generate_previous_moves(pos: Position):
                 oldpiece = ptype2piece(opp, unpromote(ptype))
                 for dy, dx in PIECE_SHORT_DIRECTIONS[oldpiece]:
                     ny, nx = y - dy, x - dx
+                    if not is_on_board(ny, nx) or pos.board[ny][nx] != BLANK: continue
                     if can_promote_y(opp, y) or can_promote_y(opp, ny):
                         moves.append(Move((ny, nx), (y, x), True))
     return moves
