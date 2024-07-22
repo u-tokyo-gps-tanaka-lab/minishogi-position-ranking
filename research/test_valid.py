@@ -52,7 +52,7 @@ def can_reach_KK(pos):
     maxd = max((v, k) for k, v in distance.items())
     return (False, (maxd[0], maxd[1].fen()))
 
-pos = Position('+p+P2G/k4/2+SS+R/1K2+B/1B3[Rg] w')
+pos = Position.from_fen('+p+P2G/k4/2+SS+R/1K2+B/1B3[Rg] w')
 poslist = generate_previous_positions(pos)
 print([pos1.fen() for pos1 in poslist])
 

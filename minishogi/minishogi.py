@@ -205,14 +205,14 @@ class Move:
 
 class Position:
     # 実際にはfenは2つ目以上のフィールドを省略できるが，ここでは4に決め打ちする
-    def __init__(self, fen="rbsgk/4p/5/P4/KGSBR[-] w", tdata=None):
-        if fen == '' and tdata is not None:
-            self.board, self.hands, self.side_to_move = tdata
-            return
+    def __init__(self, side_to_move, board, hands):
+        self.side_to_move, self.board, self.hands = side_to_move, board, hands
+    @classmethod
+    def from_fen(cls, fen="rbsgk/4p/5/P4/KGSBR[-] w"):
         fen_parts = fen.split(' ')
         if len(fen_parts) != 2:
             raise 'fen format error'
-        self.board = [[0] * 5 for _ in range(5)] # board: 段ごとのリストで盤面を表現する
+        board = [[0] * 5 for _ in range(5)] # board: 段ごとのリストで盤面を表現する
         sbstart = fen_parts[0].index('[')
         bstr = fen_parts[0][:sbstart]
         for y, l in enumerate(bstr.split('/')):
@@ -229,26 +229,27 @@ class Position:
                         i = promote(i)
                     if c.islower():
                         i = -i
-                    self.board[y][x] = i
+                    board[y][x] = i
                     x += 1
                     lastplus = False
         handstr = fen_parts[0][(sbstart + 1):-1]
-        self.hands = [[] for _ in range(2)]
+        hands = [[] for _ in range(2)]
         for c in handstr:
             if c == '-':
                 continue
             i = ptype_chars.index(c.lower())
             if c.islower():
-                self.hands[1].append(-i)
+                hands[1].append(-i)
             else:
-                self.hands[0].append(i)
+                hands[0].append(i)
         for i in range(2):
-            self.hands[i].sort(key=lambda x: abs(x))
-        self.side_to_move = 1 if fen_parts[1] == 'w' else -1
+            hands[i].sort(key=lambda x: abs(x))
+        side_to_move = 1 if fen_parts[1] == 'w' else -1
+        return cls(side_to_move, board, hands)
     def to_tuple(self):
         board = tuple(tuple(l) for l in self.board)
         hands = tuple(tuple(l) for l in self.hands)
-        return (board, hands, self.side_to_move)
+        return (self.side_to_move, board, hands)
     def __hash__(self):
         return hash(self.to_tuple())
     def __eq__(self, other):
@@ -389,7 +390,7 @@ class Position:
             if oldp != BLANK:
                 new_hands[pi].append(ptype2piece(player, unpromote(piece2ptype(oldp))))
                 new_hands[pi].sort(key=lambda x: abs(x))
-        return Position(fen='', tdata=(new_board, new_hands, -player))
+        return Position(-player, new_board, new_hands)
     def apply_unmove(self, player, move, oldpiece):
         assert self.side_to_move == -player
         new_board = list(list(l) for l in self.board)
@@ -415,7 +416,7 @@ class Position:
             if oldpiece != BLANK:
                 oldptype = piece2ptype(oldpiece)
                 new_hands[player2offset(player)].remove(ptype2piece(player, unpromote(oldptype)))
-        pos1 = Position(fen='', tdata=(new_board, new_hands, player))
+        pos1 = Position(player, new_board, new_hands)
         #assert pos1.is_consistent()
         if not pos1.is_consistent():
             print(f'pos={self.fen()}, player={player}, move={move}, oldpiece={oldpiece}')
