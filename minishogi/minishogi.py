@@ -88,11 +88,11 @@ def ptype2piece(player, ptype):
 def is_on_board(y, x):
     return 0 <= x < 5 and 0 <= y < 5
 
-SENTE = 1
-GOTE = -1
+WHITE = 1
+BLACK = -1
 def player2offset(player):
     return 0 if player > 0 else 1
-offset2player = [SENTE, GOTE]
+offset2player = [WHITE, BLACK]
 
 # 先手の(y=0, x=0)から見た相対座標
 N = (-1, 0)
@@ -142,8 +142,8 @@ for ptype, ds in PTYPE_SHORT_DIRECTIONS.items():
 
 # 先手の陣地はy=0, 後手ならy=4
 ZONE_Y_AXIS = {
-    SENTE: 0,
-    GOTE: 4
+    WHITE: 0,
+    BLACK: 4
 }
 def can_promote_y(player, y):
     return y == ZONE_Y_AXIS[player]
@@ -205,16 +205,16 @@ class Move:
 
 class Position:
     # 実際にはfenは2つ目以上のフィールドを省略できるが，ここでは4に決め打ちする
-    def __init__(self, fen="rbsgk/4p/5/P4/KGSBR[-] w 0 1", tdata=None):
+    def __init__(self, fen="rbsgk/4p/5/P4/KGSBR[-] w", tdata=None):
         if fen == '' and tdata is not None:
-            self.board, self.hands, self.side_to_move, self.check_count, self.nmoves = tdata
+            self.board, self.hands, self.side_to_move = tdata
             return
-        fenParts = fen.split(' ')
-        if len(fenParts) != 4:
+        fen_parts = fen.split(' ')
+        if len(fen_parts) != 2:
             raise 'fen format error'
         self.board = [[0] * 5 for _ in range(5)] # board: 段ごとのリストで盤面を表現する
-        sbstart = fenParts[0].index('[')
-        bstr = fenParts[0][:sbstart]
+        sbstart = fen_parts[0].index('[')
+        bstr = fen_parts[0][:sbstart]
         for y, l in enumerate(bstr.split('/')):
             x = 0
             lastplus = False
@@ -232,7 +232,7 @@ class Position:
                     self.board[y][x] = i
                     x += 1
                     lastplus = False
-        handstr = fenParts[0][(sbstart + 1):-1]
+        handstr = fen_parts[0][(sbstart + 1):-1]
         self.hands = [[] for _ in range(2)]
         for c in handstr:
             if c == '-':
@@ -244,13 +244,11 @@ class Position:
                 self.hands[0].append(i)
         for i in range(2):
             self.hands[i].sort(key=lambda x: abs(x))
-        self.side_to_move = 1 if fenParts[1] == 'w' else -1
-        self.check_count = int(fenParts[2])
-        self.nmoves = int(fenParts[3])
+        self.side_to_move = 1 if fen_parts[1] == 'w' else -1
     def to_tuple(self):
         board = tuple(tuple(l) for l in self.board)
         hands = tuple(tuple(l) for l in self.hands)
-        return (board, hands, self.side_to_move, self.check_count, self.nmoves)
+        return (board, hands, self.side_to_move)
     def __hash__(self):
         return hash(self.to_tuple())
     def __eq__(self, other):
@@ -302,7 +300,7 @@ class Position:
             self.hands[p].sort(key=lambda x: abs(x))
             for piece in self.hands[p]:
                 hands.append(piece2str(piece))
-        return f'{b}[{"".join(hands)}] {color2c(self.side_to_move)} {self.check_count} {self.nmoves}'
+        return f'{b}[{"".join(hands)}] {color2c(self.side_to_move)}'
 
     def can_move_on(self, player, y, x):
         return self.board[y][x] * player <= 0
@@ -391,7 +389,7 @@ class Position:
             if oldp != BLANK:
                 new_hands[pi].append(ptype2piece(player, unpromote(piece2ptype(oldp))))
                 new_hands[pi].sort(key=lambda x: abs(x))
-        return Position(fen='', tdata=(new_board, new_hands, -player, 0, self.nmoves))
+        return Position(fen='', tdata=(new_board, new_hands, -player))
     def apply_unmove(self, player, move, oldpiece):
         assert self.side_to_move == -player
         new_board = list(list(l) for l in self.board)
@@ -417,7 +415,7 @@ class Position:
             if oldpiece != BLANK:
                 oldptype = piece2ptype(oldpiece)
                 new_hands[player2offset(player)].remove(ptype2piece(player, unpromote(oldptype)))
-        pos1 = Position(fen='', tdata=(new_board, new_hands, player, 0, self.nmoves))
+        pos1 = Position(fen='', tdata=(new_board, new_hands, player))
         #assert pos1.is_consistent()
         if not pos1.is_consistent():
             print(f'pos={self.fen()}, player={player}, move={move}, oldpiece={oldpiece}')
@@ -461,7 +459,7 @@ class Position:
     def illegal(self):
         return not self.legal_pawn_positions() or self.can_capture_op_king()
     def __str__(self):
-        return f'Position{(self.side_to_move, self.board, self.hands, self.check_count, self.nmoves)}'
+        return f'Position{(self.side_to_move, self.board, self.hands)}'
 # ## 一手前の局面をすべて作成する generate_previous_positions
 
 def king_checkmate_pawn(pos: Position, y, x):
