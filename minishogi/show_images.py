@@ -1,4 +1,5 @@
 import minishogi
+from minishogi import Ptype, BLACK, WHITE
 from minishogi.minishogi import ptype_kchars
 
 from PIL import Image, ImageDraw, ImageFont
@@ -19,9 +20,9 @@ for i, kchar in enumerate(ptype_kchars):
     if kchar == '　':
         continue
     isize = 30
-    piece2img[i] = kimage(kchar, isize)
+    piece2img[Ptype(i).to_piece(WHITE)] = kimage(kchar, isize)
     img = piece2img[i].crop((0, 0, isize, isize))
-    piece2img[-i] = img.rotate(180)
+    piece2img[Ptype(i).to_piece(BLACK)] = img.rotate(180)
 def position_image(pos):
     grid = 40
     offset = 20
@@ -48,7 +49,7 @@ def position_image(pos):
             cx, cy = (offset + grid * (x * 2 + 1) // 2 - pimage.width // 2, offset + grid * (y * 2 + 1) // 2 - pimage.height // 2)
             im.paste(pimage, (cx, cy))
     turnx, turny = grid * W + offset * 2, int(grid * 0.5 + offset)
-    if pos.side_to_move > 0:
+    if pos.side_to_move == WHITE:
         turny = int(grid * (H - 0.5)+ offset)
     r = 10
     draw.ellipse((turnx - r, turny - r, turnx + r, turny + r),fill=(0, 0, 0))

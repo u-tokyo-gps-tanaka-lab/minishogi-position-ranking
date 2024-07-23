@@ -1,4 +1,4 @@
-from minishogi import Position, generate_previous_positions, BLANK, KING, is_promoted, piece2ptype, ZONE_Y_AXIS
+from minishogi import Position, generate_previous_positions, BLANK, KING, ZONE_Y_AXIS
 from heapq import heappush, heappop
 from collections import defaultdict
 
@@ -9,15 +9,15 @@ def distance_to_KK(pos):
         for x in range(5):
             piece = pos.board[y][x]
             if piece != BLANK:
-                ptype = piece2ptype(piece)
+                ptype = piece.ptype()
                 if ptype == KING:
                     kings.append((y, x))
                 else:
                     ans += 10
-                    if is_promoted(ptype):
+                    if ptype.is_promoted():
                         ans += 10
-                        pl = 1 if piece > 0 else -1
-                        ans += abs(ZONE_Y_AXIS[pl] - y)
+                        pl = piece.player()
+                        ans += abs(ZONE_Y_AXIS[pl.value] - y)
     assert len(kings) == 2
     if abs(kings[0][0] - kings[1][0]) + abs(kings[0][1] - kings[1][1]) <= 2:
         ans += 10

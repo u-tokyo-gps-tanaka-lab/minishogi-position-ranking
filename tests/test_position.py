@@ -1,5 +1,5 @@
 import pytest
-from minishogi import Position, Move, GOLD, BLANK, SILVER, king_checkmate_pawn
+from minishogi import Position, Move, GOLD, BLANK, SILVER, king_checkmate_pawn, BLACK, WHITE
 
 def test_inout_fen():
     p = Position.from_fen()
@@ -44,40 +44,47 @@ def test_legal_pawn_positions():
 def test_ptype_moves():
     pos = Position.from_fen('r2gk/P4/5/5/KG2R[Pbbss] w')
     moves = []
-    pos.plm_piece(moves, 1, GOLD, 4, 1)
+    pos.plm_piece(moves, WHITE, GOLD, 4, 1)
+    print([m.to_uci() for m in moves])
     assert Move.from_uci('b1a2') in moves
 
 def test_in_check():
     pos = Position.from_fen('r2gk/P4/5/5/KG2R[Pbbss] w')
-    assert pos.in_check(-1)
-    assert not pos.in_check(1)
+    assert pos.in_check(BLACK)
+    assert not pos.in_check(WHITE)
     pos = Position.from_fen('r2g1/P3k/5/5/KG1R1[Pbbss] w')
-    assert not pos.in_check(-1)
-    assert not pos.in_check(1)
+    assert not pos.in_check(BLACK)
+    assert not pos.in_check(WHITE)
+    pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[bbs] w')
+    assert not pos.in_check(BLACK)
+    assert pos.in_check(WHITE)
 
 def test_apply_move():
     pos = Position.from_fen('r2g1/P3k/5/5/KG1R1[Pbbss] w')
-    pos1 = pos.apply_move(1, Move.from_uci('a1a2'))
+    pos1 = pos.apply_move(WHITE, Move.from_uci('a1a2'))
     fen1 = pos1.fen()
     assert fen1 == 'r2g1/P3k/5/K4/1G1R1[Pbbss] b'
 
 def test_apply_unmove():
     pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
-    pos1 = pos.apply_unmove(-1, Move.from_uci('b5a5'), BLANK)
+    pos1 = pos.apply_unmove(BLACK, Move.from_uci('b5a5'), BLANK)
     fen1 = pos1.fen()
     assert fen1 == '1r1gk/P4/5/3+s+r/KG3[Pbbs] b'
     pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
-    pos1 = pos.apply_unmove(-1, Move.from_uci('c1d2+'), SILVER)
+    pos1 = pos.apply_unmove(BLACK, Move.from_uci('c1d2+'), SILVER.to_piece(WHITE))
     fen1 = pos1.fen()
     assert fen1 == 'r2gk/P4/5/3S+r/KGs2[Pbb] b'
 
 def test_checkmate():
+    pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[bbs] w')
+    assert pos.in_checkmate()
     pos = Position.from_fen('3g1/4k/p4/g4/KGrR1[Pbbss] w')
     assert pos.in_checkmate()
     pos = Position.from_fen('3g1/p3k/5/g4/KGrR1[Pbbss] w')
     assert not pos.in_checkmate()
     pos = Position.from_fen('3g1/4k/p4/g4/KGRr1[Pbbss] w')
     assert not pos.in_checkmate()
+
 
 def test_king_checkmate_pawn():
     pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[bbs] w')

@@ -1,4 +1,4 @@
-from minishogi import Move, PAWN, SILVER, GOLD, BISHOP, ROOK
+from minishogi import Move, PAWN, SILVER, GOLD, BISHOP, ROOK, WHITE, BLACK
 
 def test_move_equal():
     move1 = Move((4, 4), (4, 2), False)
@@ -6,12 +6,12 @@ def test_move_equal():
     assert move1 == move2
 
 def test_drop_move():
-    for piece in [PAWN, SILVER, GOLD, BISHOP, ROOK]:
+    for ptype in [PAWN, SILVER, GOLD, BISHOP, ROOK]:
         for y in range(5):
             for x in range(5):
-                m = Move.make_drop_move(piece, (y, x))
+                m = Move.make_drop_move(ptype.to_piece(WHITE), (y, x))
                 assert m.is_drop()
-                m = Move.make_drop_move(-piece, (y, x))
+                m = Move.make_drop_move(ptype.to_piece(BLACK), (y, x))
                 assert m.is_drop()
 
 def test_moves_uci():
