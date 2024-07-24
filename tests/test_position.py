@@ -41,6 +41,8 @@ def test_legal_pawn_positions():
               '1bsgk/4P/4P/5/KGSBR[r] w', '1bsgk/4P/4P/5/KGSBR[r] w']:
         assert not Position.from_fen(p).legal_pawn_positions()
 
+
+
 def test_ptype_moves():
     pos = Position.from_fen('r2gk/P4/5/5/KG2R[Pbbss] w')
     moves = []

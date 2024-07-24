@@ -85,12 +85,14 @@ BLANK = Piece.BLANK
 # ptype
 class Ptype(IntEnum):
     BLANK = 0
+    BASIC_MIN = 1
     KING = 1 # 相手は-1
     ROOK = 2 # 相手は-2
     BISHOP = 3 # 相手は-3
     GOLD = 4 # 相手は-4
     SILVER = 5 # 相手は-5
     PAWN = 6 # 相手は-6
+    BASIC_MAX = 6
     PROOK = 2 | 8
     PBISHOP = 3 | 8
     PSILVER = 5 | 8
