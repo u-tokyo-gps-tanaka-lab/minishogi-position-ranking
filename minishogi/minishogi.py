@@ -118,7 +118,14 @@ BISHOP = Ptype.BISHOP
 GOLD = Ptype.GOLD
 SILVER = Ptype.SILVER
 PAWN = Ptype.PAWN
-
+ptype_counts = {
+    PAWN: 2,
+    SILVER: 2,
+    BISHOP: 2, 
+    ROOK: 2,
+    GOLD: 2,
+    KING: 2
+}
 # piece type
 
 def is_on_board(y, x):
@@ -221,6 +228,8 @@ class Move:
 
 
 class Position:
+    H = 5
+    W = 5
     # 実際にはfenは2つ目以上のフィールドを省略できるが，ここでは4に決め打ちする
     def __init__(self, side_to_move, board, hands):
         self.side_to_move, self.board, self.hands = side_to_move, board, hands
