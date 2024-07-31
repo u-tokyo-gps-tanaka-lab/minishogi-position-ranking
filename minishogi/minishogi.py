@@ -13,13 +13,16 @@ from enum import Enum, IntEnum
 # - 自分の駒 < 相手の駒　でソートする．
 # 
 # 
-
+H = 5
+W = 5
 # プレイヤの定義
 class Player(Enum):
     WHITE = 0
     BLACK = 1
     def flip(self):
         return Player(1 - self.value)
+    def __lt__(self, other):
+        return self.value < other.value
 WHITE = Player.WHITE
 BLACK = Player.BLACK    
 
@@ -81,7 +84,14 @@ class Piece(IntEnum):
         s = s if self.player() == BLACK else s.upper()
         s = ('+' if self.is_promoted() else '') + s
         return s
+    def __lt__(self, other):
+        pt0, pt1 = self.ptype(), other.ptype()
+        if pt0 != pt1:
+            return pt0 < pt1
+        return self.player() < other.player()
+
 BLANK = Piece.BLANK
+ptype2i = {}
 # ptype
 class Ptype(IntEnum):
     BLANK = 0
@@ -103,6 +113,10 @@ class Ptype(IntEnum):
         return Ptype(self.value & 7)
     def is_promoted(self) -> bool:
         return self.value & 8 != 0
+    def unpromote_if(self):
+        if self.is_promoted():
+            return self.unpromote()
+        return self
     def to_piece(self, player):
         if self != Ptype.BLANK:
             return Piece(self.value + (player.value << 4))
@@ -110,6 +124,11 @@ class Ptype(IntEnum):
     # promote可能か?
     def can_promote(self):
         return not self.is_promoted() and self != KING and self != GOLD
+    def __lt__(self, other):
+        i0, i1 = ptype2i[self.unpromote_if()], ptype2i[other.unpromote_if()]
+        if i0 != i1:
+            return i0 < i1
+        return self.is_promoted() and not other.is_promoted()
 
 # 成り駒: 自分なら+8、相手なら-8する
 KING = Ptype.KING
@@ -118,6 +137,8 @@ BISHOP = Ptype.BISHOP
 GOLD = Ptype.GOLD
 SILVER = Ptype.SILVER
 PAWN = Ptype.PAWN
+ptype_order = [KING, GOLD, PAWN, SILVER, ROOK, BISHOP, Ptype.BLANK]
+ptype2i = {x : i for i, x in enumerate(ptype_order)}
 ptype_counts = {
     PAWN: 2,
     SILVER: 2,
@@ -135,27 +156,27 @@ def is_on_board(y, x):
 N = (-1, 0)
 S = (1, 0)
 E = (0, 1)
-W = (0, -1)
+West = (0, -1)
 NW = (-1, -1)
 NE = (-1, 1)
 SW = (1, -1)
 SE = (1, 1)
 
 PTYPE_SHORT_DIRECTIONS: dict[int, list[tuple[int, int]]] = {
-    KING : [N, S, E, W, NW, NE, SW, SE],
+    KING : [N, S, E, West, NW, NE, SW, SE],
     ROOK : [],
     BISHOP : [],
-    GOLD : [N, S, E, W, NW, NE],
+    GOLD : [N, S, E, West, NW, NE],
     SILVER: [N, NW, NE, SW, SE],
     PAWN: [N],
     ROOK.promote() : [NE, NW, SW, SE],
-    BISHOP.promote() : [E, N, W, S],
+    BISHOP.promote() : [E, N, West, S],
 }
 for ptype in [SILVER, PAWN]:
     PTYPE_SHORT_DIRECTIONS[ptype.promote()] = PTYPE_SHORT_DIRECTIONS[GOLD]
 
 PTYPE_LONG_DIRECTIONS: dict[int, list[tuple[int, int]]] = {
-    ROOK : [N, S, E, W],
+    ROOK : [N, S, E, West],
     BISHOP : [NE, NW, SW, SE],
 }
 for ptype in [ROOK, BISHOP]:
@@ -235,6 +256,7 @@ class Position:
         self.side_to_move, self.board, self.hands = side_to_move, board, hands
     @classmethod
     def from_fen(cls, fen="rbsgk/4p/5/P4/KGSBR[-] w"):
+        fen = fen.rstrip()
         fen_parts = fen.split(' ')
         if len(fen_parts) != 2:
             raise 'fen format error'
