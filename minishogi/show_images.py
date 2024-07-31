@@ -1,4 +1,6 @@
+from collections import Counter
 import minishogi
+from minishogi import Ptype, BLACK, WHITE, Player
 from minishogi.minishogi import ptype_kchars
 
 from PIL import Image, ImageDraw, ImageFont
@@ -19,39 +21,59 @@ for i, kchar in enumerate(ptype_kchars):
     if kchar == '　':
         continue
     isize = 30
-    piece2img[i] = kimage(kchar, isize)
+    piece2img[Ptype(i).to_piece(WHITE)] = kimage(kchar, isize)
     img = piece2img[i].crop((0, 0, isize, isize))
-    piece2img[-i] = img.rotate(180)
+    piece2img[Ptype(i).to_piece(BLACK)] = img.rotate(180)
+piece2img2 = {}
+for piece, img in piece2img.items():
+    piece2img2[piece] = img.resize((img.width // 2, img.height // 2))
+
 def position_image(pos):
     grid = 40
-    offset = 20
+    offset_y = 20
+    offset_x = 70
     W, H = 5, 5
-    im = Image.new("RGB", (grid * W + 90, grid * H + 90))
+    im = Image.new("RGB", (grid * W + 130, grid * H + 50))
     draw = ImageDraw.Draw(im)
-    draw.rectangle([(0,0),(grid * W + 90, grid * H + 90)],fill=(255,255,255))
+    draw.rectangle([(0,0),(grid * W + 130, grid * H + 50)],fill=(255,255,255))
     #fnt = ImageFont.truetype("Humor-Sans.ttf",)
     fnt = ImageFont.truetype(IPAfont_path,25)
+    smallfnt = ImageFont.truetype(IPAfont_path,15)
     for y in range(H + 1):
-        draw.line([(offset, offset + y * grid), (offset + W * grid, offset + y * grid)],fill=(0,0,0),width=3)
+        draw.line([(offset_x, offset_y + y * grid), (offset_x + W * grid, offset_y + y * grid)],fill=(0,0,0),width=3)
     for x in range(W + 1):
-        draw.line([(offset + x * grid, offset), (offset + x * grid, offset + H * grid)],fill=(0,0,0),width=3)
+        draw.line([(offset_x + x * grid, offset_y), (offset_x + x * grid, offset_y + H * grid)],fill=(0,0,0),width=3)
     for x in range(W):
-        draw.text((offset + (x + 0.4)*grid , offset + (H + 0.01) * grid),chr(ord('a') + x), font=fnt,fill=(0,0,0))
+        draw.text((offset_x + (x + 0.4)*grid , offset_y + (H + 0.01) * grid),chr(ord('a') + x), font=fnt,fill=(0,0,0))
     for y in range(H):
-        draw.text((offset - 0.4*grid , offset + (y + 0.2) * grid),str(H - y), font=fnt,fill=(0,0,0))
+        draw.text((offset_x - 0.4*grid , offset_y + (y + 0.2) * grid),str(H - y), font=fnt,fill=(0,0,0))
     for y in range(H):
         for x in range(W):
             piece = pos.board[y][x]
             if piece == 0:
                 continue
             pimage = piece2img[piece]
-            cx, cy = (offset + grid * (x * 2 + 1) // 2 - pimage.width // 2, offset + grid * (y * 2 + 1) // 2 - pimage.height // 2)
+            cx, cy = (offset_x + grid * (x * 2 + 1) // 2 - pimage.width // 2, offset_y + grid * (y * 2 + 1) // 2 - pimage.height // 2)
             im.paste(pimage, (cx, cy))
-    turnx, turny = grid * W + offset * 2, int(grid * 0.5 + offset)
-    if pos.side_to_move > 0:
-        turny = int(grid * (H - 0.5)+ offset)
+    turnx, turny = int(grid * (W + 0.5) + offset_x), int(grid * 0.5 + offset_y)
+    if pos.side_to_move == WHITE:
+        turny = int(grid * (H - 0.5)+ offset_y)
     r = 10
     draw.ellipse((turnx - r, turny - r, turnx + r, turny + r),fill=(0, 0, 0))
+    # hands
+    for pl in range(2):
+        hands = pos.hands[pl]
+        counts = Counter(hands)
+        kvs = list(counts.items())
+        for i, (k, v) in enumerate(kvs):
+            piece = k.to_piece(WHITE)
+            pimage = piece2img2[piece]
+            if pl == 0:
+                cx, cy = int(grid * W + offset_x + 0.5 * grid - 6), int(grid * (H - 1 - 0.5 * (i + 1)) + offset_y)
+            else:
+                cx, cy = int(offset_x - 1 * grid - 17), int(grid * (0.1 + 0.5 * i)+ offset_y)
+            im.paste(pimage, (cx, cy))
+            draw.text((cx + 20, cy + 2),'x ' + str(v), smallfont=fnt,fill=(0,0,0))
     return im
 def showstate(state, filename=None):
     #rstate = flip_vertical(state)

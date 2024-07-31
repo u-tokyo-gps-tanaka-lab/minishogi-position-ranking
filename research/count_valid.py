@@ -55,7 +55,7 @@ def can_reach_KK(pos):
 random1M = []
 with open('../data/random1M.txt') as f:
     for fen in f.readlines():
-        pos = Position(fen)
+        pos = Positon.from_fen(fen)
         random1M.append(pos)
         #if len(random1M) > 100:
         #    break

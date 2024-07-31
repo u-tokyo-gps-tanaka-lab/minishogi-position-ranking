@@ -1,2 +1,2 @@
-from minishogi.minishogi import Position, Move, BLANK, PAWN, SILVER, GOLD, BISHOP, ROOK, KING, generate_previous_moves, generate_previous_positions, king_checkmate_pawn, is_promoted, piece2ptype, ZONE_Y_AXIS
+from minishogi.minishogi import Position, Move, Ptype, generate_previous_moves, generate_previous_positions, king_checkmate_pawn, ZONE_Y_AXIS, GOLD, BLACK, WHITE, BLANK, SILVER, ROOK, BISHOP, KING, PAWN, Player, ptype_counts
 from minishogi.show_images import showstate
