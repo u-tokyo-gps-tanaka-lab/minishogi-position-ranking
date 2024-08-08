@@ -28,6 +28,7 @@ def make_count_sub(i):
         for hc2, bc2 in l2:
             ans.append((hc1 + hc2, bc1 + bc2))
     print(f'make_count_sub(i={i}) return len(ans)={len(ans)}')
+    print(ans)
     return ans            
 countall = make_count_sub(0)
 countall.sort()
@@ -68,9 +69,12 @@ def main():
     countsum = 0
     for i in range(len(countall)):
         c = countall[i]
+        print(c)
         if len(c) != 2:
             print(f'i={i}, c={c}')
         s, l = count2N(c)
+        print(s)
+        print(f"{l}\n")
         rank2count.append((countsum, c, l))
         countsum += s
 

@@ -42,5 +42,7 @@ def make_count_sub(i):
 countall = make_count_sub(1)
 countall.sort()
 countall = [(tuple(x[0]), tuple(x[1])) for x in countall]
+for elem in countall:
+    print(elem)
 count2i = {x: i for i, x in enumerate(countall)}
 print(f'len(countall)={len(countall)}, countall[100000]{countall[100000]}')

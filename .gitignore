@@ -12,3 +12,4 @@ wheels/
 uf*/
 *.tar.gz
 
+*.log
