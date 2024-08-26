@@ -21,18 +21,26 @@ def pos_y(pos):
     return pos % H
 
 KPOS_COUNT = H * (W // 2) * (H * W - 1) + H * (H * (W + 1) // 2 - 1)
+
 def kpos_rank2pos(onboards, j, empties):
-    """ WHITE, BLACKのkingのpositionの組のうち，j番目の要素を onboards に追加する．
+    """
+    WHITE, BLACKのkingのpositionの組のうち，j番目の要素を onboards に追加する．
+    Add the j-th element of the set of positions of WHITE and BLACK kings to onboards.
     
-    左右反転した時に小さい方の組み合わせしか生成しない．emptiesのサイズは，H * Wのサイズに限る．
+    元の盤面とその左右を反転した盤のうち、小さい方の組み合わせしか生成しない．emptiesのサイズは，H * Wのサイズに限る．
+    Generate only the smaller combinations of the original board and its left-right reversed board. The size of empties is limited to H * W.
+
     空きマスのリスト empties からkingを置いた場合は削除する．
+    If a king from the list of empty squares 'empties', remove it.
+
     座標 pos はx * H + y で計算される非負整数 0 <= pos < H * W 
+    The cordinate 'pos' is calculated by x * H + y, where 0 <= pos < H * W.
 
     Args:
-        onboards (list[Tuple[Piece, int]]): (piece, pos) を追加する対象
-        j (int): j番目の要素
-        empties (list[int]): H * W のサイズの空きマスのリスト，実行すると2つ減る
-    Returns: None            
+        onboards (list[Tuple[Piece, int]]): The target to add the tuple (piece, pos)
+        j (int): The j-th element
+        empties (list[int]): A list of empty squares of size H * W, which decreases by 2 when executed
+    Returns: None    
     """
     assert len(empties) == H * W
     assert W % 2 == 1
@@ -52,12 +60,15 @@ def kpos_rank2pos(onboards, j, empties):
     onboards.append((KING.to_piece(BLACK), k1))
 
 # rest個の空マスから n_pieces を選ぶ時，最小のインデックスを i個にする組み合わせの数
+# When selecting 'n_pieces' from 'rest' empty squares, how many combinations are there when the smallest index is 'i'?
 comb_table = [[[0] * rest for n_pieces in range(19)] for rest in range(H * W + 1)]
 for rest in range(1, H * W + 1):
     for n_pieces in range(1, min(rest, 18) + 1):
         for i in range(rest):
             comb_table[rest][n_pieces][i] = comb(rest - 1 - i, n_pieces - 1)
+
 # rest個の空マスから n_pieces を選ぶ時，最小のインデックスが i個未満の組み合わせの数は?
+# When selecting 'n_pieces' from 'rest' empty squares, how many combinations are there when the smallest index is less than 'i'?
 comb_table_pre = [[[0] * (rest + 1) for n_pieces in range(19)] for rest in range(H * W + 1)]        
 for rest in range(1, H * W + 1):
     for n_pieces in range(1, min(rest, 18) + 1):
@@ -65,9 +76,12 @@ for rest in range(1, H * W + 1):
             comb_table_pre[rest][n_pieces][i + 1] = comb_table_pre[rest][n_pieces][i] + comb_table[rest][n_pieces][i] 
 
 def piece_rank2pos(onboards, piece, j, n_pieces, empties):
-    """ pieceがn_piecesあるとき，小さい順に並んだ座標のリストのうち，j番目の要素を onboards に追加する．
+    """
+    pieceがn_piecesあるとき，小さい順に並んだ座標のリストのうち，j番目の要素を onboards に追加する．
+    When there are n_pieces of piece, add the j-th element of the list of coordinates arranged in ascending order to onboards.
     
     空きマスのリスト empties から削除する．
+    Remove it from the list of empty squares 'empties'.
 
     Args:
         onboards (list[Tuple[Piece, int, int]]): (piece, y, x) を追加する対象
@@ -106,6 +120,7 @@ def pt2comblist(canp, n_empty, allcount):
                 rank2comb.append((x, (pb0, pb1, b0, b1)))
                 x += xadd
     return x, rank2comb           
+
 canpromote2comb_table = [[pt2comblist(True, n_empty, allcount) for allcount in range(18 + 1)] for n_empty in range(H * W + 1)]
 nopromote2comb_table = [[pt2comblist(False, n_empty, allcount) for allcount in range(18 + 1)] for n_empty in range(H * W + 1)]
 
