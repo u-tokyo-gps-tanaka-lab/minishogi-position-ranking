@@ -75,6 +75,7 @@ def position_image(pos):
             im.paste(pimage, (cx, cy))
             draw.text((cx + 20, cy + 2),'x ' + str(v), smallfont=fnt,fill=(0,0,0))
     return im
+
 def showstate(state, filename=None):
     #rstate = flip_vertical(state)
     #print(f'(canwin, candraw)[{state}]={(canwin[state], candraw[state])}')
@@ -83,6 +84,7 @@ def showstate(state, filename=None):
     if filename:
         img.save(filename)
     return img
+
 def show_images_hv(images, w, filename=None, showarrow=True):
     width = images[0].width
     height = images[0].height
