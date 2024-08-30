@@ -65,13 +65,13 @@ def test_apply_move():
     pos = Position.from_fen('r2g1/P3k/5/5/KG1R1[Pbbss] w')
     pos1 = pos.apply_move(WHITE, Move.from_uci('a1a2'))
     fen1 = pos1.fen()
-    assert fen1 == 'r2g1/P3k/5/K4/1G1R1[Pbbss] b'
+    assert fen1 == 'r2g1/P3k/5/K4/1G1R1[Pssbb] b'
 
 def test_apply_unmove():
     pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
     pos1 = pos.apply_unmove(BLACK, Move.from_uci('b5a5'), BLANK)
     fen1 = pos1.fen()
-    assert fen1 == '1r1gk/P4/5/3+s+r/KG3[Pbbs] b'
+    assert fen1 == '1r1gk/P4/5/3+s+r/KG3[Psbb] b'
     pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
     pos1 = pos.apply_unmove(BLACK, Move.from_uci('c1d2+'), SILVER.to_piece(WHITE))
     fen1 = pos1.fen()

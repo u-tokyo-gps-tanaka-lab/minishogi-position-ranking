@@ -34,8 +34,8 @@ def test_generate_previous_positions():
     pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
     poslist = [pos1.fen() for pos1 in generate_previous_positions(pos)]
     poslist1 = [
-        '1r1gk/P4/5/3+s+r/KG3[Pbbs] b',
-        'r2gk/P4/5/4+r/KGs2[Pbbs] b',
+        '1r1gk/P4/5/3+s+r/KG3[Psbb] b',
+        'r2gk/P4/5/4+r/KGs2[Psbb] b',
         'r2gk/P4/5/3S+r/KGs2[Pbb] b',
         'r2gk/P4/5/3+S+r/KGs2[Pbb] b',
     ]
@@ -45,13 +45,13 @@ def test_generate_previous_positions():
     pos = Position.from_fen('+P2gk/5/5/3+s+r/KG3[RPbbs] b')
     poslist = [pos1.fen() for pos1 in generate_previous_positions(pos)]
     poslist1 = [
-        'r2gk/P4/5/3+s+r/KG3[Pbbs] w',
+        'r2gk/P4/5/3+s+r/KG3[Psbb] w',
     ]
     #print(f'poslist={poslist}')
     for pos1 in poslist1:
         assert pos1 in poslist
 def test_do_undo():
-    posstr = 'r2gk/P4/5/3+s+r/KG3[Pbbs] w'
+    posstr = 'r2gk/P4/5/3+s+r/KG3[Psbb] w'
     pos = Position.from_fen(posstr)
     assert pos.is_consistent()
     moves = pos.plm(pos.side_to_move)
