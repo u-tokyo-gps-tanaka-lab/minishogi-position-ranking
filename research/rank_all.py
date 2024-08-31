@@ -1,11 +1,11 @@
 from math import comb
 import json
-from minishogi import Ptype, KING, BLACK, WHITE, ptype_counts, H, W, KING, GOLD, PAWN, SILVER, ROOK, BISHOP, ptype_order
+from minishogi import Ptype, KING, BLACK, WHITE, ptype_counts, H, W, KING, GOLD, PAWN, SILVER, ROOK, BISHOP
 
-# ptype_order = [KING, GOLD, KNIGHT, LANCE, PAWN, SILVER, ROOK, BISHOP, Ptype.BLANK]
-# (handcounts, boardcounts) を返す．
-# handcounts, boardcounts は
-#　(piece count) のpair
+ptype_order = [KING, GOLD, PAWN, SILVER, ROOK, BISHOP, Ptype.BLANK]
+
+# returns (handcounts, boardcounts).
+# The 'handcounts' and 'boardcounts' are pairs of (piece type, piece count)
 def make_count_sub(i):
     if i >= len(ptype_order) or ptype_order[i] == Ptype.BLANK:
         return [([], [])]
@@ -28,7 +28,8 @@ def make_count_sub(i):
         for hc2, bc2 in l2:
             ans.append((hc1 + hc2, bc1 + bc2))
     print(f'make_count_sub(i={i}) return len(ans)={len(ans)}')
-    return ans            
+    return ans
+
 countall = make_count_sub(0)
 def oldkey(v):
     hc, bc = v
@@ -37,6 +38,7 @@ def oldkey(v):
     return hc, bc
 countall.sort(key=lambda x: oldkey(x))
 KPOS_COUNT = H * (W // 2) * (H * W - 1) + H * (H * (W + 1) // 2 - 1)
+
 def count_ptype(pt, n_empty, v):
     x = 0
     for pb0 in range(v + 1 if pt.can_promote() else 1):
@@ -47,7 +49,7 @@ def count_ptype(pt, n_empty, v):
                 b1 = v1 - b0
                 xadd = comb(n_empty, pb0) * comb(n_empty - pb0, pb1) * comb(n_empty - pb0 - pb1, b0) * comb(n_empty - pb0 - pb1 - b0, b1)
                 x += xadd
-    return x            
+    return x
 
 def count2N(c):
     hc, bc = c

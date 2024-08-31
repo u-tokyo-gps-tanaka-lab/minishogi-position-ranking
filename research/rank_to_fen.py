@@ -7,7 +7,6 @@ from operator import mul
 from minishogi import Ptype, WHITE, BLACK, KING, H, W
 from rank import countsum, rank2l, l2pos
 
-
 flipH_OK = []
 flipH_NG = []
 

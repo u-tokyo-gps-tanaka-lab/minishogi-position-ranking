@@ -9,6 +9,8 @@
 #   generate-hashes: false
 
 -e file:.
+exceptiongroup==1.2.2
+    # via pytest
 iniconfig==2.0.0
     # via pytest
 packaging==24.1
@@ -19,3 +21,5 @@ pluggy==1.5.0
     # via pytest
 pytest==8.3.2
     # via python
+tomli==2.0.1
+    # via pytest

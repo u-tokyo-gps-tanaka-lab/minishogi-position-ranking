@@ -1,9 +1,9 @@
 from minishogi import Ptype, KING, BLACK, WHITE, ptype_counts, Position
 
 H, W = Position.H, Position.W
-# (handcounts, boardcounts) を返す．
-# handcounts, boardcounts は
-#　(piece count) のpair
+
+# returns (handcounts, boardcounts) 
+# The 'handcounts' and 'boardcounts' are pairs of (piece type, piece count) 
 def make_count_sub(i):
     if i > Ptype.BASIC_MAX.value:
         return [([], [])]
