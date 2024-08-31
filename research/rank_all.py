@@ -30,7 +30,12 @@ def make_count_sub(i):
     print(f'make_count_sub(i={i}) return len(ans)={len(ans)}')
     return ans            
 countall = make_count_sub(0)
-countall.sort()
+def oldkey(v):
+    hc, bc = v
+    hc = [(int(x[0]), x[1]) for x in hc]
+    bc = [(int(x[0]), x[1]) for x in hc]
+    return hc, bc
+countall.sort(key=lambda x: oldkey(x))
 KPOS_COUNT = H * (W // 2) * (H * W - 1) + H * (H * (W + 1) // 2 - 1)
 def count_ptype(pt, n_empty, v):
     x = 0

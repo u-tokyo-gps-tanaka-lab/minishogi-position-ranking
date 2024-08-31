@@ -15,8 +15,8 @@ def test_count2N_table():
         for pti, v in [[6, 2], [5, 2], [4, 2], [3, 2], [2, 2]]:
             pt = Ptype(pti)
             if pt.can_promote():
-                ans0, combs = canpromote2comb_table[n_empty][v]
+                ans0, combs, _ = canpromote2comb_table[n_empty][v]
             else:
-                ans0, combs = nopromote2comb_table[n_empty][v]
+                ans0, combs, _ = nopromote2comb_table[n_empty][v]
             ans1 = count_ptype(pt, n_empty, v)
             assert ans0 == ans1

@@ -62,32 +62,32 @@ def test_in_check():
     assert pos.in_check(WHITE)
 
 def test_apply_move():
-    pos = Position.from_fen('r2g1/P3k/5/5/KG1R1[Pbbss] w')
+    pos = Position.from_fen('r2g1/P3k/5/5/KG1R1[Pssbb] w')
     pos1 = pos.apply_move(WHITE, Move.from_uci('a1a2'))
     fen1 = pos1.fen()
-    assert fen1 == 'r2g1/P3k/5/K4/1G1R1[Pbbss] b'
+    assert fen1 == 'r2g1/P3k/5/K4/1G1R1[Pssbb] b'
 
 def test_apply_unmove():
-    pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
+    pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Psbb] w')
     pos1 = pos.apply_unmove(BLACK, Move.from_uci('b5a5'), BLANK)
     fen1 = pos1.fen()
-    assert fen1 == '1r1gk/P4/5/3+s+r/KG3[Pbbs] b'
-    pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Pbbs] w')
+    assert fen1 == '1r1gk/P4/5/3+s+r/KG3[Psbb] b'
+    pos = Position.from_fen('r2gk/P4/5/3+s+r/KG3[Psbb] w')
     pos1 = pos.apply_unmove(BLACK, Move.from_uci('c1d2+'), SILVER.to_piece(WHITE))
     fen1 = pos1.fen()
     assert fen1 == 'r2gk/P4/5/3S+r/KGs2[Pbb] b'
 
 def test_checkmate():
-    pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[bbs] w')
+    pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[sbb] w')
     assert pos.in_checkmate()
-    pos = Position.from_fen('3g1/4k/p4/g4/KGrR1[Pbbss] w')
+    pos = Position.from_fen('3g1/4k/p4/g4/KGrR1[Pssbb] w')
     assert pos.in_checkmate()
-    pos = Position.from_fen('3g1/p3k/5/g4/KGrR1[Pbbss] w')
+    pos = Position.from_fen('3g1/p3k/5/g4/KGrR1[Pssbb] w')
     assert not pos.in_checkmate()
-    pos = Position.from_fen('3g1/4k/p4/g4/KGRr1[Pbbss] w')
+    pos = Position.from_fen('3g1/4k/p4/g4/KGRr1[Pssbb] w')
     assert not pos.in_checkmate()
 
 
 def test_king_checkmate_pawn():
-    pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[bbs] w')
+    pos = Position.from_fen('r2gk/P4/1+r3/p2+s1/K1G2[sbb] w')
     assert king_checkmate_pawn(pos, 3, 0)

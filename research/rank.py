@@ -4,7 +4,9 @@ from math import comb
 from bisect import bisect_left, bisect_right
 from functools import reduce
 from operator import mul
-from minishogi import Ptype, WHITE, BLACK, KING, H, W, Position, BLANK
+from collections import defaultdict
+
+from minishogi import Ptype, WHITE, BLACK, KING, H, W, Position, BLANK, ptype_order, Piece
 
 COUNT2I_JSON = 'count2i.json'
 def read_count2i(filename):
@@ -14,6 +16,11 @@ def read_count2i(filename):
 counts = read_count2i(COUNT2I_JSON)
 countsum, rank2count = counts['sum'], counts['rank2count']
 # print(f'countsum={countsum}, len(count2offset)={len(count2offset)}')
+hb2oms = {}
+for o, hbc, ms in rank2count:
+    hbc = (tuple(map(tuple, hbc[0])), tuple(map(tuple, hbc[1])))
+    #print(hbc)
+    hb2oms[hbc] = (o, ms)
 
 def pos_x(pos):
     return pos // H
@@ -92,6 +99,7 @@ def pt2comblist(canp, n_empty, allcount):
     if n_empty < allcount:
         return (0, [])
     rank2comb = []
+    comb2rank = {}
     x = 0
     for pb0 in range(allcount + 1 if canp else 1):
         v0 = allcount - pb0
@@ -104,8 +112,9 @@ def pt2comblist(canp, n_empty, allcount):
                 b1 = v1 - b0
                 xadd = comb(n_empty, pb0) * comb(n_empty_1, pb1) * comb(n_empty_2, b0) * comb(n_empty_3, b1)
                 rank2comb.append((x, (pb0, pb1, b0, b1)))
+                comb2rank[(pb0, pb1, b0, b1)] = x
                 x += xadd
-    return x, rank2comb           
+    return x, rank2comb, comb2rank           
 canpromote2comb_table = [[pt2comblist(True, n_empty, allcount) for allcount in range(18 + 1)] for n_empty in range(H * W + 1)]
 nopromote2comb_table = [[pt2comblist(False, n_empty, allcount) for allcount in range(18 + 1)] for n_empty in range(H * W + 1)]
 
@@ -115,12 +124,11 @@ def basic_ptype_rank2pos(onboards, pt, empties, n_pieces, j):
         combsall = canpromote2comb_table[n_empty][n_pieces]
     else:
         combsall = nopromote2comb_table[n_empty][n_pieces]
-    #print(f'basic_ptype_rankpos(pt={pt}, n_empty={n_empty}, n_pieces = {n_pieces}), combsall = {combsall}, j ={j}')
     assert j < combsall[0]
     k = bisect_left(combsall[1], (j, (0, 0, 0, 0)))
     if len(combsall[1]) <= k or combsall[1][k][0] > j:
         k -= 1
-    #print(f'k={k}')
+    j -= combsall[1][k][0]
     combs = combsall[1][k][1]        
     for i, x in enumerate(combs):
         if x != 0:
@@ -138,7 +146,6 @@ def rank2l(x):
     if not (j < len(rank2count) and rank2count[j][0] == x):
         j -= 1
     o, cs, ms = rank2count[j]
-    #print(f'o, cs, ms = {(o, cs, ms)}')
     x -= o
     mult = KPOS_COUNT * reduce(mul, ms[0], 1) * reduce(mul, ms[1], 1)
     assert x < mult
@@ -153,7 +160,6 @@ def rank2l(x):
             hands[0].append(pt)
         for _ in range(v - j):
             hands[1].append(pt)
-    #print(f'hands={hands}, x = {x}, mult = {mult}')            
     onboards = []
     assert mult % KPOS_COUNT == 0
     mult //= KPOS_COUNT
@@ -167,18 +173,124 @@ def rank2l(x):
         mult //= ms[1][i]
         j = x % ms[1][i]
         x //= ms[1][i]
-        #rest = len(empties)
-        #x1, rank2comb = pt2comblist(pt, rest, v)
-        #
-        #assert j < x1
-        #print(f'x1={x1}, rank2comb={rank2comb}')
-        #k = bisect_left(rank2comb, (j, (0, 0, 0, 0)))
-        #if not(k < len(rank2comb) and rank2comb[k][0] == j):
-        #    k -= 1
-        #j -= rank2comb[k][0]
         basic_ptype_rank2pos(onboards, pt, empties, v, j)
-        #print(f'pt={pt}, i={i}, v={v}, x={x}, j={j}, x1={x1}, rank2comb={rank2comb}')
     return (hands, onboards)
+
+def l2key(l):
+    hands, onboard = l
+    pts = defaultdict(int)
+    for p in range(2):
+        for pt in hands[p]:
+            pts[pt] += 1
+    hc = []
+    for pt in ptype_order:
+        if pt in pts:
+            hc.append((int(pt), pts[pt]))
+    p2pos = defaultdict(list)
+    for piece, pos in onboard:
+        p2pos[piece].append(pos)
+    pt2count = defaultdict(int)        
+    for piece, xs in p2pos.items():
+        pt = piece.ptype().unpromote_if()
+        pt2count[pt] += len(xs)
+    bc = []        
+    for pt in ptype_order:
+        if pt != KING and pt in pt2count:
+            bc.append((int(pt), pt2count[pt]))
+    return (tuple(hc), tuple(bc))
+
+def piece_pos2rank(pc, empties, posls):
+    ans = 0
+    rest = len(empties)
+    n_pieces = len(posls)
+    empty_base = 0
+    while n_pieces > 0:
+        j = empties.index(posls[-n_pieces])
+        v = comb_table_pre[rest - empty_base][n_pieces][j - empty_base]
+        ans += v
+        empties.pop(j)
+        rest -= 1
+        #print(f'rest={rest}, empty_base={empty_base}, n_pieces={n_pieces}, j={j}, v={v}, comb_table_pre[rest - empty_base][n_pieces] = {comb_table_pre[rest - empty_base][n_pieces]}')
+        #ans += comb_table_pre[rest - empty_base][n_pieces][j - empty_base]
+        
+        empty_base = j
+        n_pieces -= 1
+    return ans
+
+def l2rank(l):
+    hands, onboards = l
+    hands0 = defaultdict(int)
+    for pt in hands[0]:
+        hands0[pt] += 1
+    pc2pos = defaultdict(list)
+    for pc, pos in onboards:
+        pc2pos[pc].append(pos)
+    hbc = l2key(l)
+    o, ms = hb2oms[hbc]
+    ans = 0
+    base = 1
+    # hands
+    for i in range(len(hbc[0])):
+        pt, cnt = hbc[0][i]
+        cnt1 = hands0.get(Ptype(pt), 0)
+        ans += base * cnt1
+        base *= (cnt + 1)
+    # kpos
+    empties = list(range(H * W))
+    j0 = pc2pos[Piece.W_KING][0]
+    empties.pop(j0)
+    j1 = empties.index(pc2pos[Piece.B_KING][0])
+    empties.pop(j1)
+    kpos = 0
+    if j0 < H * (W // 2):
+        kpos = j0 + j1 * H * (W // 2)
+    elif j0 < H * (W // 2 + 1):
+        kpos = H * (W // 2) * (H * W - 1) + (j0 % H) + j1 * H
+    else:
+        print(f'pc2pos={pc2pos}, j0={j0}, j1={j1}')
+        raise ValueError(f'invalid king positions ')
+    ans += base * kpos
+    base *= KPOS_COUNT
+    for i in range(len(hbc[1])):
+        pt, cnt = hbc[1][i]
+        pt = Ptype(pt)
+        ptcounts = []
+        posls = []
+        for j in range(0, 2): # j == 0 promoted, 1 not promoted
+            for p in range(0, 2): # p == 0 white, 1 black
+                if j == 0 and not pt.can_promote():
+                    ptcounts.append(0)
+                    posls.append([])
+                else:
+                    pc = pt.to_piece([WHITE, BLACK][p])
+                    if j == 0:
+                        pc = pc.promote()
+                    posl = pc2pos.get(pc, [])
+                    ptcounts.append(len(posl))
+                    posls.append(posl[:])
+        ptcounts = tuple(ptcounts)
+        n_empty = len(empties)
+        if pt.can_promote():
+            x, rank2comb, comb2rank = canpromote2comb_table[n_empty][cnt]
+        else:
+            x, rank2comb, comb2rank = nopromote2comb_table[n_empty][cnt]                            
+        rank = comb2rank[ptcounts]
+        in_rank = 0
+        in_rank_base = 1
+        for j in range(0, 2): # j == 0 promoted, 1 not promoted
+            for p in range(0, 2): # p == 0 white, 1 black
+                if ptcounts[j * 2 + p] == 0:
+                    continue
+                n_empty = len(empties)
+                pc = pt.to_piece([WHITE, BLACK][p])
+                if j == 0:
+                    pc = pc.promote()
+                v = piece_pos2rank(pc, empties, posls[j * 2 + p])
+                in_rank += in_rank_base * v
+                in_rank_base *= comb(n_empty, len(posls[j * 2 + p]))
+        ans += base * (rank + in_rank)
+        base *= x
+    return ans + o
 
 def l2pos(l):
     hands, onboards = l
@@ -201,3 +313,8 @@ def pos2l(pos):
 
 def rank2pos(x):
     return l2pos(rank2l(x))
+
+def pos2rank(pos):
+    l = pos2l(pos)
+    #print(f'pos.board={pos.board}, l={l}')
+    return l2rank(l)
