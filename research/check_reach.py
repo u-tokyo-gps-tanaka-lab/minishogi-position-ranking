@@ -39,8 +39,8 @@ def can_reach_KK(pos):
     i = 0
     while len(q) > 0:
         d, pos1 = heappop(q)
-        if i % 1 == 0:
-            print(f'len(q)={len(q)}, d={d}, pos1={pos1.fen()}')
+        #if i % 1 == 0:
+        #    print(f'len(q)={len(q)}, d={d}, pos1={pos1.fen()}')
         i += 1
         #print(f'd={d}, pos1={pos1.fen()}')
         if d == 0:
@@ -91,7 +91,7 @@ def process_file(filename, parfile=False):
 
 def main():
     assert len(sys.argv) == 2
-    process_file(sys.argv[1], True)
+    process_file(sys.argv[1], False)
 
 if __name__ == "__main__":
     main()

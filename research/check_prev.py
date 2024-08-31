@@ -37,7 +37,7 @@ def process_file(filename, parfile=False):
 
 def main():
     assert len(sys.argv) == 2
-    process_file(sys.argv[1], True)
+    process_file(sys.argv[1], False)
 
 if __name__ == "__main__":
     main()
