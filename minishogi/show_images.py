@@ -4,10 +4,10 @@ from minishogi import Ptype, BLACK, WHITE, Player
 from minishogi.minishogi import ptype_kchars
 
 from PIL import Image, ImageDraw, ImageFont
-# ryzen0
-# IPAfont_path = '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf'
-# thinkpad
-IPAfont_path = '/usr/share/fonts/OTF/ipag.ttf'
+
+## Here you have to set `IPAfont_path` depending on your system.
+# IPAfont_path = '/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf' # Example 1
+IPAfont_path = '/usr/share/fonts/OTF/ipag.ttf' # Example 2
 
 def kimage(kchar, grid=40):
     im = Image.new("RGB", (grid, grid))

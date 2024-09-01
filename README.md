@@ -15,7 +15,7 @@ $ rye sync
 $ cd research
 ```
 
-Make sure that you are in `research` directory before you start the follwing experiments.
+Make sure that you are in `research` directory before you start the follwing experiments. Also, you need to have IPAGothic font in your system to visualize positions.
 
 ### 1. generate $S_{all}$ and rank its elements
 
