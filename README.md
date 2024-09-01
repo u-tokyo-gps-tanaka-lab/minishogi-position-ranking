@@ -57,3 +57,5 @@ $ rye run python check_king.py piece_OK.txt
 $ rye run python check_prev.py king_OK.txt
 $ rye run python check_reach.py prev_OK.txt
 ```
+
+After running these commands, you will be able to estimate the number of reachable positions in Minishogi using interval estimation of the population proportion of $S_{all}$.
