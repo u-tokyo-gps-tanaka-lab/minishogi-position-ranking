@@ -1,8 +1,8 @@
 # minishogi-position-ranking
 
-<!-- [![arXiv](https://img.shields.io/badge/arXiv-1234.56789-b31b1b.svg)](https://arxiv.org/abs/1234.56789) -->
+[![arXiv](https://img.shields.io/badge/arXiv-2409.00129-b31b1b.svg)](https://arxiv.org/abs/2409.00129)
 
-cf. "Estimating the number of reachable positions in Minishogi"  http://id.nii.ac.jp/1001/00238391/ (in Japanese)
+cf. "Estimating the number of reachable positions in Minishogi"  http://id.nii.ac.jp/1001/00238391/ (in Japanese), https://arxiv.org/abs/2409.00129 (in English).
 
 [Rye](https://rye.astral.sh/) is required to run these programs.
 
