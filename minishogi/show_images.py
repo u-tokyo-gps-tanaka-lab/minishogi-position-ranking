@@ -1,4 +1,5 @@
 from collections import Counter
+
 import minishogi
 from minishogi import Ptype, BLACK, WHITE, Player
 from minishogi.minishogi import ptype_kchars
@@ -16,6 +17,7 @@ def kimage(kchar, grid=40):
     fnt = ImageFont.truetype(IPAfont_path, grid)
     draw.text((0, 0), kchar, font=fnt, fill=(0, 0, 0))
     return im
+
 piece2img = {}
 for i, kchar in enumerate(ptype_kchars):
     if kchar == '　':
@@ -24,29 +26,40 @@ for i, kchar in enumerate(ptype_kchars):
     piece2img[Ptype(i).to_piece(WHITE)] = kimage(kchar, isize)
     img = piece2img[i].crop((0, 0, isize, isize))
     piece2img[Ptype(i).to_piece(BLACK)] = img.rotate(180)
+
 piece2img2 = {}
 for piece, img in piece2img.items():
     piece2img2[piece] = img.resize((img.width // 2, img.height // 2))
 
 def position_image(pos):
     grid = 40
-    offset_y = 20
-    offset_x = 70
+    offset_y = 40
+    offset_x = 55
     W, H = 5, 5
-    im = Image.new("RGB", (grid * W + 130, grid * H + 50))
+    image_size = (grid * W + 150, grid * H + 60)
+    im = Image.new("RGB", image_size)
     draw = ImageDraw.Draw(im)
-    draw.rectangle([(0,0),(grid * W + 130, grid * H + 50)],fill=(255,255,255))
-    #fnt = ImageFont.truetype("Humor-Sans.ttf",)
+    draw.rectangle([(0,0), image_size], fill=(255,255,255))
     fnt = ImageFont.truetype(IPAfont_path,25)
     smallfnt = ImageFont.truetype(IPAfont_path,15)
+    bigfnt = ImageFont.truetype(IPAfont_path,30)
+
+    # draw the board
     for y in range(H + 1):
         draw.line([(offset_x, offset_y + y * grid), (offset_x + W * grid, offset_y + y * grid)],fill=(0,0,0),width=3)
     for x in range(W + 1):
         draw.line([(offset_x + x * grid, offset_y), (offset_x + x * grid, offset_y + H * grid)],fill=(0,0,0),width=3)
+    kanji_numbers = ['一','二','三','四','五']
     for x in range(W):
-        draw.text((offset_x + (x + 0.4)*grid , offset_y + (H + 0.01) * grid),chr(ord('a') + x), font=fnt,fill=(0,0,0))
+        label = str(W - x)
+        x_coord = offset_x + (x + 0.4) * grid
+        y_coord = offset_y - 0.75 * grid
+        draw.text((x_coord, y_coord), label, font=fnt, fill=(0,0,0))
     for y in range(H):
-        draw.text((offset_x - 0.4*grid , offset_y + (y + 0.2) * grid),str(H - y), font=fnt,fill=(0,0,0))
+        label = kanji_numbers[y]
+        x_coord = offset_x + (W + 0.15) * grid
+        y_coord = offset_y + (y + 0.2) * grid
+        draw.text((x_coord, y_coord), label, font=fnt, fill=(0,0,0))
     for y in range(H):
         for x in range(W):
             piece = pos.board[y][x]
@@ -55,12 +68,18 @@ def position_image(pos):
             pimage = piece2img[piece]
             cx, cy = (offset_x + grid * (x * 2 + 1) // 2 - pimage.width // 2, offset_y + grid * (y * 2 + 1) // 2 - pimage.height // 2)
             im.paste(pimage, (cx, cy))
-    turnx, turny = int(grid * (W + 0.5) + offset_x), int(grid * 0.5 + offset_y)
+
+    # draw the turn marker
+    turnx = int(grid * (W + 1.2) + offset_x)
+    turny = int(offset_y)
     if pos.side_to_move == WHITE:
-        turny = int(grid * (H - 0.5)+ offset_y)
-    r = 10
-    draw.ellipse((turnx - r, turny - r, turnx + r, turny + r),fill=(0, 0, 0))
-    # hands
+        # SENTE (below the board)
+        draw.text((turnx, turny), '☗\n先\n手\n番', font=fnt, fill=(0,0,0))
+    else:
+        # GOTE (above the board)
+        draw.text((turnx, turny), '☖\n後\n手\n番', font=fnt, fill=(0,0,0))
+    
+    # draw pieces in the hands
     for pl in range(2):
         hands = pos.hands[pl]
         counts = Counter(hands)
@@ -69,17 +88,14 @@ def position_image(pos):
             piece = k.to_piece(WHITE)
             pimage = piece2img2[piece]
             if pl == 0:
-                cx, cy = int(grid * W + offset_x + 0.5 * grid - 6), int(grid * (H - 1 - 0.5 * (i + 1)) + offset_y)
+                cx, cy = int(grid * W + offset_x + 1.1 * grid - 6), int(grid * (H - 1 - 0.5 * (i + 1)) + offset_y)
             else:
-                cx, cy = int(offset_x - 1 * grid - 17), int(grid * (0.1 + 0.5 * i)+ offset_y)
+                cx, cy = int(offset_x - 1.1 * grid), int(grid * (0.1 + 0.5 * i) + offset_y)
             im.paste(pimage, (cx, cy))
-            draw.text((cx + 20, cy + 2),'x ' + str(v), smallfont=fnt,fill=(0,0,0))
+            draw.text((cx + 20, cy),'x' + str(v), font=smallfnt, fill=(0,0,0))
     return im
 
 def showstate(state, filename=None):
-    #rstate = flip_vertical(state)
-    #print(f'(canwin, candraw)[{state}]={(canwin[state], candraw[state])}')
-    #print(f'(canwin, candraw)[{rstate}]={(canwin[rstate], candraw[rstate])}')
     img =  position_image(state)
     if filename:
         img.save(filename)
@@ -102,7 +118,7 @@ def show_images_hv(images, w, filename=None, showarrow=True):
         ans.paste(im, (x, y))
         if showarrow and i != n - 1:
             draw = ImageDraw.Draw(ans)
-            draw.text((x + width * 0.9 , y + height * 0.35),">", font=fnt,fill=(0,0,0))
+            draw.text((x + width * 0.9 , y + height * 0.4),">", font=fnt,fill=(0,0,0))
         x += width
         if x >= w * width:
             x = 0
