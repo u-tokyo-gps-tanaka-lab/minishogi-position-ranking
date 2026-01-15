@@ -1,6 +1,7 @@
 from math import comb
 import json
 from minishogi import Ptype, KING, BLACK, WHITE, ptype_counts, H, W, KING, GOLD, PAWN, SILVER, ROOK, BISHOP
+from research.paths import output_path
 
 ptype_order = [KING, GOLD, PAWN, SILVER, ROOK, BISHOP, Ptype.BLANK]
 
@@ -82,7 +83,7 @@ def main():
         countsum += s
 
     print(countsum)
-    with open('count2i.json', 'w') as wf:
+    with open(output_path('count2i.json'), 'w') as wf:
         json_str = json.dumps({'sum' : countsum, 'rank2count' : rank2count})
         wf.write(json_str)
 

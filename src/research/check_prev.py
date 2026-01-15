@@ -1,5 +1,6 @@
 import sys
 from minishogi import Position, generate_previous_positions, WHITE
+from research.paths import output_path
 
 def load_fen_list(fname):
     ans = []
@@ -15,9 +16,9 @@ def save_fen_list(fname, ls):
         wf.write('\n')
 
 def process_file(filename, parfile=False):
-    file_OK = f'{filename}_OK.txt' if parfile else 'prev_OK.txt'
-    file_NG = f'{filename}_NG.txt' if parfile else 'prev_NG.txt'
-    file_NG_nocheck = f'{filename}_NG_nocheck.txt' if parfile else 'prev_NG_nocheck.txt'
+    file_OK = f'{filename}_OK.txt' if parfile else output_path('prev_OK.txt')
+    file_NG = f'{filename}_NG.txt' if parfile else output_path('prev_NG.txt')
+    file_NG_nocheck = f'{filename}_NG_nocheck.txt' if parfile else output_path('prev_NG_nocheck.txt')
     with open(filename) as f:
         with open(file_OK, 'w') as wf1:
             with open(file_NG, 'w') as wf2:

@@ -1,5 +1,5 @@
 [project]
-name = "python"
+name = "minishogi-position-ranking"
 version = "0.1.0"
 description = "Add your description here"
 authors = [
@@ -25,4 +25,8 @@ dev-dependencies = []
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/python"]
+packages = ["src/minishogi", "src/research"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

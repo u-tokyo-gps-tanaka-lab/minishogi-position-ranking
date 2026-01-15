@@ -1,7 +1,7 @@
 from minishogi import Ptype
 
-from rank_all import count2N, count_ptype
-from rank import canpromote2comb_table, nopromote2comb_table
+from research.rank_all import count2N, count_ptype
+from research.rank import canpromote2comb_table, nopromote2comb_table
 
 def test_count2N():
     c =[[[6, 1], [4, 2]], [[6, 1], [5, 2], [3, 2], [2, 2]]]

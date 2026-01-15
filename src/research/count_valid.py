@@ -1,7 +1,7 @@
 from minishogi import Position, generate_previous_positions, BLANK, KING, is_promoted, piece2ptype, ZONE_Y_AXIS
 from heapq import heappush, heappop
 from collections import defaultdict
-import sys
+from research.paths import data_path, output_path
 
 def distance_to_KK(pos):
     ans = 0
@@ -53,12 +53,68 @@ def can_reach_KK(pos):
     maxd = max((v, k) for k, v in distance.items())
     return (False, (maxd[0], maxd[1].fen()))
 
-assert len(sys.argv) == 2
-infname = sys.argv[1]
+random1M = []
+with open(data_path('random1M.txt')) as f:
+    for fen in f.readlines():
+        pos = Position.from_fen(fen)
+        random1M.append(pos)
+        #if len(random1M) > 100:
+        #    break
+#
+print(f'random1M.size() = {len(random1M)}')
+pawnOK = []
+pawnNG = []
+for pos in random1M:
+    if pos.legal_pawn_positions():
+        pawnOK.append(pos)
+    else:
+        pawnNG.append(pos)
+print(f'pawnNG={len(pawnNG)}, pawnOK={len(pawnOK)}')
+print(f'pawnNG[:10] = {[pos.fen() for pos in pawnNG[:10]]}')        
+#
+checkOK = []
+checkNG = []
+for pos in pawnOK:
+    if pos.can_capture_op_king():
+        checkNG.append(pos)
+    else:
+        checkOK.append(pos)
+print(f'checkNG={len(checkNG)}, checkOK={len(checkOK)}')
+print(f'checkNG[:10] = {[pos.fen() for pos in checkNG[:10]]}')     
+
+with open(output_path('checkOK.txt'), 'w') as wf:
+    for pos in checkOK:
+        wf.write(pos.fen() + '\n')
+with open(output_path('checkNG.txt'), 'w') as wf:
+    for pos in checkNG:
+        wf.write(pos.fen() + '\n')
+
+# no prev state
 prevOK = []
-with open(infname, 'r') as rf:
-    for l in rf.readlines():
-        prevOK.append(Position(l))
+prevNG = []
+prevNGnocheck = []
+for pos in checkOK:
+    poslist = generate_previous_positions(pos)
+    if len(poslist) == 0:
+        prevNG.append(pos)
+        if not pos.in_check(pos.side_to_move):
+            prevNGnocheck.append(pos)
+    else:
+        prevOK.append(pos)
+print(f'prevNG={len(prevNG)}, prevOK={len(prevOK)}')
+print(f'prevNG[:10] = {[pos.fen() for pos in prevNG[:10]]}') 
+print(f'prevOK[:10] = {[pos.fen() for pos in prevOK[:10]]}') 
+
+print(f'prevNGnocheck={len(prevNGnocheck)}')
+print(f'prevNGnocheck[:10] = {[pos.fen() for pos in prevNGnocheck[:10]]}') 
+
+with open(output_path('prevOK.txt'), 'w') as wf:
+    for pos in prevOK:
+        wf.write(pos.fen() + '\n')
+with open(output_path('prevNG.txt'), 'w') as wf:
+    for pos in prevNG:
+        wf.write(pos.fen() + '\n')
+
 
 reachOK = []
 reachNG = []
@@ -81,9 +137,9 @@ print(f'reachNG={len(reachNG)}, reachOK={len(reachOK)}')
 print(f'reachNG[:10] = {[pos.fen() for pos in reachNG[:10]]}') 
 print(f'reachOK[:10] = {[pos.fen() for pos in reachOK[:10]]}') 
 
-with open(f'reachOK.{infname}.txt', 'w') as wf:
+with open(output_path('reachOK.txt'), 'w') as wf:
     for pos in reachOK:
         wf.write(pos.fen() + '\n')
-with open(f'reachNG.{infname}.txt', 'w') as wf:
+with open(output_path('reachNG.txt'), 'w') as wf:
     for pos in reachNG:
         wf.write(pos.fen() + '\n')

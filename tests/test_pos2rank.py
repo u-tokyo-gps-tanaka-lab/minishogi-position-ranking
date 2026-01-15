@@ -1,9 +1,14 @@
+import os
 from itertools import combinations
 from collections import defaultdict, Counter
 import random
 
-from rank import kpos_rank2pos, comb, comb_table_pre, piece_rank2pos, pt2comblist, basic_ptype_rank2pos, pos_x, pos_y, canpromote2comb_table, nopromote2comb_table, rank2l, l2pos, pos2rank, l2key, pos2l, rank2pos
+from research.rank import kpos_rank2pos, comb, comb_table_pre, piece_rank2pos, pt2comblist, basic_ptype_rank2pos, pos_x, pos_y, canpromote2comb_table, nopromote2comb_table, rank2l, l2pos, pos2rank, l2key, pos2l, rank2pos
 from minishogi import Position, H, W, KING, WHITE, BLACK, PAWN, SILVER, GOLD, BISHOP, ROOK
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_THIS_DIR)
+RESEARCH_DIR = os.path.join(_PROJECT_ROOT, 'research')
 
 
 def test_l2key():
@@ -81,7 +86,7 @@ def test_pos2rank():
     assert pos == pos1
 
 def test_pos2rank_from_file():
-    with open('checkOK.txt') as f:
+    with open(os.path.join(RESEARCH_DIR, 'checkOK.txt')) as f:
         for lno in range(1000):
             l = f.readline()
             fen = ' '.join(l.split()[:2])
@@ -93,7 +98,7 @@ def test_pos2rank_from_file():
             assert pos == pos1
 
 def test_rank2pos_from_file():
-    with open('RN100M.txt') as f:
+    with open(os.path.join(RESEARCH_DIR, 'RN100M.txt')) as f:
         for lno in range(1000):
             l = f.readline()
             rank = int(l)

@@ -257,10 +257,11 @@ class Position:
         self.side_to_move, self.board, self.hands = side_to_move, board, hands
     @classmethod
     def from_fen(cls, fen="rbsgk/4p/5/P4/KGSBR[-] w"):
-        fen = fen.rstrip()
-        fen_parts = fen.split(' ')
-        if len(fen_parts) != 2:
-            raise 'fen format error'
+        fen = fen.strip()
+        fen_parts = fen.split()
+        if len(fen_parts) < 2:
+            raise ValueError(f'fen format error: {fen}')
+        fen_parts = fen_parts[:2]
         # The board is represented as a list of rows.
         board = [[Piece(0)] * 5 for _ in range(5)]
         sbstart = fen_parts[0].index('[')
