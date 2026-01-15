@@ -4,18 +4,18 @@
 
 cf. "Estimating the number of reachable positions in Minishogi"  http://id.nii.ac.jp/1001/00238391/ (in Japanese), https://arxiv.org/abs/2409.00129 (in English).
 
-[Rye](https://rye.astral.sh/) is required to run these programs.
+[uv](https://docs.astral.sh/uv/) is required to run these programs.
 
 ## Reproduce the experiments
 
 ### Setup
 
 ```bash
-$ rye sync
-$ cd research
+$ uv sync
+$ cd src/research
 ```
 
-Make sure that you are in `research` directory before you start the follwing experiments. Also, you need to have IPAGothic font in your system to visualize positions.
+You need to have IPAGothic font in your system to visualize positions.
 
 ### 1. generate $S_{all}$ and rank its elements
 
@@ -37,8 +37,8 @@ make_count_sub(i=1) return len(ans)=243
 ### 2. generate random integers (position ranks)
 
 ```bash
-$ rye run python random_number_10K.py
-$ rye run python random_number_100M.py # requires a few GB of storage
+$ uv run python random_number_10K.py
+$ uv run python random_number_100M.py # requires a few GB of storage
 ```
 
 They will create `RN10K.txt` and `RN100M.txt` respectively. The former is for testing and the latter for the main experiment.
@@ -46,16 +46,16 @@ They will create `RN10K.txt` and `RN100M.txt` respectively. The former is for te
 ### 3. check the legality of the positions
 
 ```bash
-$ rye run python rank_to_fen.py RN100M.txt
+$ uv run python rank_to_fen.py ../../research/RN100M.txt
 ```
 
 `rank_to_fen.py` reads the random ranks, generates pseudo-legal positions corresponding to them, and checks if they are identical when flipped horizontally. It creates `flipH_[OK,NG].txt` in default.
 
 ```bash
-$ rye run python check_piece.py flipH_OK.txt
-$ rye run python check_king.py piece_OK.txt
-$ rye run python check_prev.py king_OK.txt
-$ rye run python check_reach.py prev_OK.txt
+$ rye run python check_piece.py ../../research/flipH_OK.txt
+$ rye run python check_king.py ../../research/piece_OK.txt
+$ rye run python check_prev.py ../../research/king_OK.txt
+$ rye run python check_reach.py ../../research/prev_OK.txt
 ```
 
 After running these commands, you will be able to estimate the number of reachable positions in Minishogi using interval estimation of the population proportion of $S_{all}$.
