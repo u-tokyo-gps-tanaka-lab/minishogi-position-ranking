@@ -1,11 +1,13 @@
 import sys
 from collections import defaultdict
 from minishogi import Position, BLANK
+
 H = 5
 W = 5
 
+
 def count_fenfile(fname):
-    with open(fname, 'r') as f:
+    with open(fname, "r") as f:
         p2pos = {}
         piececount = defaultdict(int)
         lno = 1
@@ -28,13 +30,15 @@ def count_fenfile(fname):
         for k, v in sorted(p2pos.items()):
             print(k)
             for y in range(H):
-                print(' '.join(str(p2pos[k][y][x]) for x in range(W)))
-            print('\n')                
+                print(" ".join(str(p2pos[k][y][x]) for x in range(W)))
+            print("\n")
             print(piececount[k])
+
 
 def main():
     for fname in sys.argv[1:]:
         count_fenfile(fname)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

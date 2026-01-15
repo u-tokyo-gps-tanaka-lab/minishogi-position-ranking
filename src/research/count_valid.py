@@ -1,7 +1,16 @@
-from minishogi import Position, generate_previous_positions, BLANK, KING, is_promoted, piece2ptype, ZONE_Y_AXIS
+from minishogi import (
+    Position,
+    generate_previous_positions,
+    BLANK,
+    KING,
+    is_promoted,
+    piece2ptype,
+    ZONE_Y_AXIS,
+)
 from heapq import heappush, heappop
 from collections import defaultdict
 from research.paths import data_path, output_path
+
 
 def distance_to_KK(pos):
     ans = 0
@@ -22,7 +31,8 @@ def distance_to_KK(pos):
     assert len(kings) == 2
     if abs(kings[0][0] - kings[1][0]) + abs(kings[0][1] - kings[1][1]) <= 2:
         ans += 10
-    return ans        
+    return ans
+
 
 def can_reach_KK(pos):
     prev = {}
@@ -33,17 +43,17 @@ def can_reach_KK(pos):
     i = 0
     while len(q) > 0:
         d, pos1 = heappop(q)
-        #if i % 1000 == 0:
+        # if i % 1000 == 0:
         #    print(f'len(q)={len(q)}, d={d}, pos1={pos1.fen()}')
         i += 1
-        #print(f'd={d}, pos1={pos1.fen()}')
+        # print(f'd={d}, pos1={pos1.fen()}')
         if d == 0:
             ans = [pos1]
             while pos1 != pos:
                 pos1 = prev[pos1]
                 ans.append(pos1)
             ans.append(pos)
-            #print(f'len(prev)={len(prev)}')
+            # print(f'len(prev)={len(prev)}')
             return (True, [pos.fen() for pos in ans])
         for pos2 in generate_previous_positions(pos1):
             if pos2 not in prev:
@@ -53,15 +63,16 @@ def can_reach_KK(pos):
     maxd = max((v, k) for k, v in distance.items())
     return (False, (maxd[0], maxd[1].fen()))
 
+
 random1M = []
-with open(data_path('random1M.txt')) as f:
+with open(data_path("random1M.txt")) as f:
     for fen in f.readlines():
         pos = Position.from_fen(fen)
         random1M.append(pos)
-        #if len(random1M) > 100:
+        # if len(random1M) > 100:
         #    break
 #
-print(f'random1M.size() = {len(random1M)}')
+print(f"random1M.size() = {len(random1M)}")
 pawnOK = []
 pawnNG = []
 for pos in random1M:
@@ -69,8 +80,8 @@ for pos in random1M:
         pawnOK.append(pos)
     else:
         pawnNG.append(pos)
-print(f'pawnNG={len(pawnNG)}, pawnOK={len(pawnOK)}')
-print(f'pawnNG[:10] = {[pos.fen() for pos in pawnNG[:10]]}')        
+print(f"pawnNG={len(pawnNG)}, pawnOK={len(pawnOK)}")
+print(f"pawnNG[:10] = {[pos.fen() for pos in pawnNG[:10]]}")
 #
 checkOK = []
 checkNG = []
@@ -79,15 +90,15 @@ for pos in pawnOK:
         checkNG.append(pos)
     else:
         checkOK.append(pos)
-print(f'checkNG={len(checkNG)}, checkOK={len(checkOK)}')
-print(f'checkNG[:10] = {[pos.fen() for pos in checkNG[:10]]}')     
+print(f"checkNG={len(checkNG)}, checkOK={len(checkOK)}")
+print(f"checkNG[:10] = {[pos.fen() for pos in checkNG[:10]]}")
 
-with open(output_path('checkOK.txt'), 'w') as wf:
+with open(output_path("checkOK.txt"), "w") as wf:
     for pos in checkOK:
-        wf.write(pos.fen() + '\n')
-with open(output_path('checkNG.txt'), 'w') as wf:
+        wf.write(pos.fen() + "\n")
+with open(output_path("checkNG.txt"), "w") as wf:
     for pos in checkNG:
-        wf.write(pos.fen() + '\n')
+        wf.write(pos.fen() + "\n")
 
 # no prev state
 prevOK = []
@@ -101,19 +112,19 @@ for pos in checkOK:
             prevNGnocheck.append(pos)
     else:
         prevOK.append(pos)
-print(f'prevNG={len(prevNG)}, prevOK={len(prevOK)}')
-print(f'prevNG[:10] = {[pos.fen() for pos in prevNG[:10]]}') 
-print(f'prevOK[:10] = {[pos.fen() for pos in prevOK[:10]]}') 
+print(f"prevNG={len(prevNG)}, prevOK={len(prevOK)}")
+print(f"prevNG[:10] = {[pos.fen() for pos in prevNG[:10]]}")
+print(f"prevOK[:10] = {[pos.fen() for pos in prevOK[:10]]}")
 
-print(f'prevNGnocheck={len(prevNGnocheck)}')
-print(f'prevNGnocheck[:10] = {[pos.fen() for pos in prevNGnocheck[:10]]}') 
+print(f"prevNGnocheck={len(prevNGnocheck)}")
+print(f"prevNGnocheck[:10] = {[pos.fen() for pos in prevNGnocheck[:10]]}")
 
-with open(output_path('prevOK.txt'), 'w') as wf:
+with open(output_path("prevOK.txt"), "w") as wf:
     for pos in prevOK:
-        wf.write(pos.fen() + '\n')
-with open(output_path('prevNG.txt'), 'w') as wf:
+        wf.write(pos.fen() + "\n")
+with open(output_path("prevNG.txt"), "w") as wf:
     for pos in prevNG:
-        wf.write(pos.fen() + '\n')
+        wf.write(pos.fen() + "\n")
 
 
 reachOK = []
@@ -124,22 +135,22 @@ i = 0
 for pos in prevOK:
     ans = can_reach_KK(pos)
     if ans[0] == True:
-        #if i % 100 == 0:
+        # if i % 100 == 0:
         #    print(ans[1])
-        reachOK.append(pos)        
+        reachOK.append(pos)
         okcount[len(ans[1])] += 1
     else:
-        #if i % 100 == 0:
+        # if i % 100 == 0:
         #    print(ans[1])
         reachNG.append(pos)
         ngcount[ans[1]] += 1
-print(f'reachNG={len(reachNG)}, reachOK={len(reachOK)}')
-print(f'reachNG[:10] = {[pos.fen() for pos in reachNG[:10]]}') 
-print(f'reachOK[:10] = {[pos.fen() for pos in reachOK[:10]]}') 
+print(f"reachNG={len(reachNG)}, reachOK={len(reachOK)}")
+print(f"reachNG[:10] = {[pos.fen() for pos in reachNG[:10]]}")
+print(f"reachOK[:10] = {[pos.fen() for pos in reachOK[:10]]}")
 
-with open(output_path('reachOK.txt'), 'w') as wf:
+with open(output_path("reachOK.txt"), "w") as wf:
     for pos in reachOK:
-        wf.write(pos.fen() + '\n')
-with open(output_path('reachNG.txt'), 'w') as wf:
+        wf.write(pos.fen() + "\n")
+with open(output_path("reachNG.txt"), "w") as wf:
     for pos in reachNG:
-        wf.write(pos.fen() + '\n')
+        wf.write(pos.fen() + "\n")

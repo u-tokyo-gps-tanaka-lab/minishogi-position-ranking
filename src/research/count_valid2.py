@@ -2,8 +2,9 @@ from minishogi import Ptype, KING, BLACK, WHITE, ptype_counts, Position
 
 H, W = Position.H, Position.W
 
-# returns (handcounts, boardcounts) 
-# The 'handcounts' and 'boardcounts' are pairs of (piece type, piece count) 
+
+# returns (handcounts, boardcounts)
+# The 'handcounts' and 'boardcounts' are pairs of (piece type, piece count)
 def make_count_sub(i):
     if i > Ptype.BASIC_MAX.value:
         return [([], [])]
@@ -21,16 +22,19 @@ def make_count_sub(i):
         if bc > 0:
             l1add[1].append((pt, bc))
         l1.append(l1add)
-    ans = []                            
+    ans = []
     for hc1, bc1 in l1:
         for hc2, bc2 in l2:
             ans.append((hc1 + hc2, bc1 + bc2))
-    print(f'make_count_sub(i={i}) return len(ans)={len(ans)}')
-    return ans            
+    print(f"make_count_sub(i={i}) return len(ans)={len(ans)}")
+    return ans
+
+
 countall = make_count_sub(Ptype.BASIC_MIN.value)
 countall.sort()
-print(f'len(countall)={len(countall)}, countall[100]{countall[100]}')
-#print(f'countall={countall}')
+print(f"len(countall)={len(countall)}, countall[100]{countall[100]}")
+# print(f'countall={countall}')
+
 
 def comb(n, m):
     if n < m:
@@ -41,13 +45,14 @@ def comb(n, m):
         ans = ans * (n - i) // (i + 1)
     return ans
 
+
 def count2N(c):
     hc, bc = c
     hcmult = 1
     for pt, v in hc:
-        hcmult *= (v + 1)
-    bcmult = H * (W // 2) * (H * W - 1) + H * (H * (W + 1) // 2 - 1) # KING position
-    #print(f'bcmult={bcmult}')
+        hcmult *= v + 1
+    bcmult = H * (W // 2) * (H * W - 1) + H * (H * (W + 1) // 2 - 1)  # KING position
+    # print(f'bcmult={bcmult}')
     rest = H * W - 2
     for pt, v in bc:
         x = 0
@@ -57,12 +62,19 @@ def count2N(c):
                 v1 = v0 - pb1
                 for b0 in range(v1 + 1):
                     b1 = v1 - b0
-                    xadd = comb(rest, pb0) * comb(rest - pb0, pb1) * comb(rest - pb0 - pb1, b0) * comb(rest - pb0 - pb1 - b0, b1)
+                    xadd = (
+                        comb(rest, pb0)
+                        * comb(rest - pb0, pb1)
+                        * comb(rest - pb0 - pb1, b0)
+                        * comb(rest - pb0 - pb1 - b0, b1)
+                    )
                     x += xadd
-        #print(f'pt={pt}, v={v}, x={x}')
+        # print(f'pt={pt}, v={v}, x={x}')
         bcmult *= x
-        rest -= v                            
+        rest -= v
     return hcmult * bcmult
-print(f'count2N(countall[100]){count2N(countall[100])}')
+
+
+print(f"count2N(countall[100]){count2N(countall[100])}")
 ansall = sum(count2N(c) for c in countall)
 print(ansall)

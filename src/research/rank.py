@@ -6,66 +6,86 @@ from functools import reduce
 from operator import mul
 from collections import defaultdict
 
-from minishogi import Ptype, WHITE, BLACK, KING, H, W, Position, BLANK, ptype_order, Piece
+from minishogi import (
+    Ptype,
+    WHITE,
+    BLACK,
+    KING,
+    H,
+    W,
+    Position,
+    BLANK,
+    ptype_order,
+    Piece,
+)
 from research.paths import output_path
 
-COUNT2I_JSON = output_path('count2i.json')
+COUNT2I_JSON = output_path("count2i.json")
+
+
 def read_count2i(filename):
     with open(filename) as f:
         return json.load(f)
 
+
 counts = read_count2i(COUNT2I_JSON)
-countsum, rank2count = counts['sum'], counts['rank2count']
+countsum, rank2count = counts["sum"], counts["rank2count"]
 # print(f'countsum={countsum}, len(count2offset)={len(count2offset)}')
 hb2oms = {}
 for o, hbc, ms in rank2count:
     hbc = (tuple(map(tuple, hbc[0])), tuple(map(tuple, hbc[1])))
-    #print(hbc)
+    # print(hbc)
     hb2oms[hbc] = (o, ms)
+
 
 def pos_x(pos):
     return pos // H
+
+
 def pos_y(pos):
     return pos % H
 
+
 KPOS_COUNT = H * (W // 2) * (H * W - 1) + H * (H * (W + 1) // 2 - 1)
+
 
 def kpos_rank2pos(onboards, j, empties):
     """
     WHITE, BLACKのkingのpositionの組のうち，j番目の要素を onboards に追加する．
     Add the j-th element of the set of positions of WHITE and BLACK kings to onboards.
-    
+
     元の盤面とその左右を反転した盤のうち、小さい方の組み合わせしか生成しない．emptiesのサイズは，H * Wのサイズに限る．
     Generate only the smaller combinations of the original board and its left-right reversed board. The size of empties is limited to H * W.
 
     空きマスのリスト empties からkingを置いた場合は削除する．
     If a king from the list of empty squares 'empties', remove it.
 
-    座標 pos はx * H + y で計算される非負整数 0 <= pos < H * W 
+    座標 pos はx * H + y で計算される非負整数 0 <= pos < H * W
     The cordinate 'pos' is calculated by x * H + y, where 0 <= pos < H * W.
 
     Args:
         onboards (list[Tuple[Piece, int]]): The target to add the tuple (piece, pos)
         j (int): The j-th element
         empties (list[int]): A list of empty squares of size H * W, which decreases by 2 when executed
-    Returns: None    
+    Returns: None
     """
     assert len(empties) == H * W
     assert W % 2 == 1
     assert j < H * (W // 2) * (H * W - 1) + H * (H * W - 1)
     if j < H * (W // 2) * (H * W - 1):
         j0 = j % (H * (W // 2))
-        k0 = empties.pop(j0)        
+        k0 = empties.pop(j0)
         j1 = j // (H * (W // 2))
         k1 = empties.pop(j1)
     else:
         j -= H * (W // 2) * (H * W - 1)
-        j0 = j % H 
+        j0 = j % H
         k0 = empties.pop(H * (W // 2) + j0)
-        j1 = j // H 
+        j1 = j // H
         k1 = empties.pop(j1)
     onboards.append((KING.to_piece(WHITE), k0))
     onboards.append((KING.to_piece(BLACK), k1))
+
 
 # rest個の空マスから n_pieces を選ぶ時，最小のインデックスを i個にする組み合わせの数
 # When selecting 'n_pieces' from 'rest' empty squares, how many combinations are there when the smallest index is 'i'?
@@ -77,26 +97,31 @@ for rest in range(1, H * W + 1):
 
 # rest個の空マスから n_pieces を選ぶ時，最小のインデックスが i個未満の組み合わせの数は?
 # When selecting 'n_pieces' from 'rest' empty squares, how many combinations are there when the smallest index is less than 'i'?
-comb_table_pre = [[[0] * (rest + 1) for n_pieces in range(19)] for rest in range(H * W + 1)]        
+comb_table_pre = [
+    [[0] * (rest + 1) for n_pieces in range(19)] for rest in range(H * W + 1)
+]
 for rest in range(1, H * W + 1):
     for n_pieces in range(1, min(rest, 18) + 1):
         for i in range(rest):
-            comb_table_pre[rest][n_pieces][i + 1] = comb_table_pre[rest][n_pieces][i] + comb_table[rest][n_pieces][i] 
+            comb_table_pre[rest][n_pieces][i + 1] = (
+                comb_table_pre[rest][n_pieces][i] + comb_table[rest][n_pieces][i]
+            )
+
 
 def piece_rank2pos(onboards, piece, j, n_pieces, empties):
     """
     pieceがn_piecesあるとき，小さい順に並んだ座標のリストのうち，j番目の要素を onboards に追加する．
     When there are n_pieces of piece, add the j-th element of the list of coordinates arranged in ascending order to onboards.
-    
+
     空きマスのリスト empties から削除する．
     Remove it from the list of empty squares 'empties'.
 
     Args:
         onboards (list[Tuple[Piece, int, int]]): (piece, y, x) を追加する対象
-        piece (Piece): 
+        piece (Piece):
         j (int): j番目の要素
         empties (list[int]): H * W のサイズの空きマスのリスト，実行すると2つ減る
-    Returns: None            
+    Returns: None
     """
     rest = len(empties)
     empty_base = 0
@@ -125,13 +150,27 @@ def pt2comblist(canp, n_empty, allcount):
             for b0 in range(v1 + 1):
                 n_empty_3 = n_empty_2 - b0
                 b1 = v1 - b0
-                xadd = comb(n_empty, pb0) * comb(n_empty_1, pb1) * comb(n_empty_2, b0) * comb(n_empty_3, b1)
+                xadd = (
+                    comb(n_empty, pb0)
+                    * comb(n_empty_1, pb1)
+                    * comb(n_empty_2, b0)
+                    * comb(n_empty_3, b1)
+                )
                 rank2comb.append((x, (pb0, pb1, b0, b1)))
                 comb2rank[(pb0, pb1, b0, b1)] = x
                 x += xadd
-    return x, rank2comb, comb2rank           
-canpromote2comb_table = [[pt2comblist(True, n_empty, allcount) for allcount in range(18 + 1)] for n_empty in range(H * W + 1)]
-nopromote2comb_table = [[pt2comblist(False, n_empty, allcount) for allcount in range(18 + 1)] for n_empty in range(H * W + 1)]
+    return x, rank2comb, comb2rank
+
+
+canpromote2comb_table = [
+    [pt2comblist(True, n_empty, allcount) for allcount in range(18 + 1)]
+    for n_empty in range(H * W + 1)
+]
+nopromote2comb_table = [
+    [pt2comblist(False, n_empty, allcount) for allcount in range(18 + 1)]
+    for n_empty in range(H * W + 1)
+]
+
 
 def basic_ptype_rank2pos(onboards, pt, empties, n_pieces, j):
     n_empty = len(empties)
@@ -144,7 +183,7 @@ def basic_ptype_rank2pos(onboards, pt, empties, n_pieces, j):
     if len(combsall[1]) <= k or combsall[1][k][0] > j:
         k -= 1
     j -= combsall[1][k][0]
-    combs = combsall[1][k][1]        
+    combs = combsall[1][k][1]
     for i, x in enumerate(combs):
         if x != 0:
             rest = len(empties)
@@ -155,6 +194,7 @@ def basic_ptype_rank2pos(onboards, pt, empties, n_pieces, j):
             if i & 2 == 0:
                 piece = piece.promote()
             piece_rank2pos(onboards, piece, cur, x, empties)
+
 
 def rank2l(x):
     j = bisect_left(rank2count, [x, [], []])
@@ -191,6 +231,7 @@ def rank2l(x):
         basic_ptype_rank2pos(onboards, pt, empties, v, j)
     return (hands, onboards)
 
+
 def l2key(l):
     hands, onboard = l
     pts = defaultdict(int)
@@ -204,15 +245,16 @@ def l2key(l):
     p2pos = defaultdict(list)
     for piece, pos in onboard:
         p2pos[piece].append(pos)
-    pt2count = defaultdict(int)        
+    pt2count = defaultdict(int)
     for piece, xs in p2pos.items():
         pt = piece.ptype().unpromote_if()
         pt2count[pt] += len(xs)
-    bc = []        
+    bc = []
     for pt in ptype_order:
         if pt != KING and pt in pt2count:
             bc.append((int(pt), pt2count[pt]))
     return (tuple(hc), tuple(bc))
+
 
 def piece_pos2rank(pc, empties, posls):
     ans = 0
@@ -225,12 +267,13 @@ def piece_pos2rank(pc, empties, posls):
         ans += v
         empties.pop(j)
         rest -= 1
-        #print(f'rest={rest}, empty_base={empty_base}, n_pieces={n_pieces}, j={j}, v={v}, comb_table_pre[rest - empty_base][n_pieces] = {comb_table_pre[rest - empty_base][n_pieces]}')
-        #ans += comb_table_pre[rest - empty_base][n_pieces][j - empty_base]
-        
+        # print(f'rest={rest}, empty_base={empty_base}, n_pieces={n_pieces}, j={j}, v={v}, comb_table_pre[rest - empty_base][n_pieces] = {comb_table_pre[rest - empty_base][n_pieces]}')
+        # ans += comb_table_pre[rest - empty_base][n_pieces][j - empty_base]
+
         empty_base = j
         n_pieces -= 1
     return ans
+
 
 def l2rank(l):
     hands, onboards = l
@@ -249,7 +292,7 @@ def l2rank(l):
         pt, cnt = hbc[0][i]
         cnt1 = hands0.get(Ptype(pt), 0)
         ans += base * cnt1
-        base *= (cnt + 1)
+        base *= cnt + 1
     # kpos
     empties = list(range(H * W))
     j0 = pc2pos[Piece.W_KING][0]
@@ -262,8 +305,8 @@ def l2rank(l):
     elif j0 < H * (W // 2 + 1):
         kpos = H * (W // 2) * (H * W - 1) + (j0 % H) + j1 * H
     else:
-        print(f'pc2pos={pc2pos}, j0={j0}, j1={j1}')
-        raise ValueError(f'invalid king positions ')
+        print(f"pc2pos={pc2pos}, j0={j0}, j1={j1}")
+        raise ValueError(f"invalid king positions ")
     ans += base * kpos
     base *= KPOS_COUNT
     for i in range(len(hbc[1])):
@@ -271,8 +314,8 @@ def l2rank(l):
         pt = Ptype(pt)
         ptcounts = []
         posls = []
-        for j in range(0, 2): # j == 0 promoted, 1 not promoted
-            for p in range(0, 2): # p == 0 white, 1 black
+        for j in range(0, 2):  # j == 0 promoted, 1 not promoted
+            for p in range(0, 2):  # p == 0 white, 1 black
                 if j == 0 and not pt.can_promote():
                     ptcounts.append(0)
                     posls.append([])
@@ -288,12 +331,12 @@ def l2rank(l):
         if pt.can_promote():
             x, rank2comb, comb2rank = canpromote2comb_table[n_empty][cnt]
         else:
-            x, rank2comb, comb2rank = nopromote2comb_table[n_empty][cnt]                            
+            x, rank2comb, comb2rank = nopromote2comb_table[n_empty][cnt]
         rank = comb2rank[ptcounts]
         in_rank = 0
         in_rank_base = 1
-        for j in range(0, 2): # j == 0 promoted, 1 not promoted
-            for p in range(0, 2): # p == 0 white, 1 black
+        for j in range(0, 2):  # j == 0 promoted, 1 not promoted
+            for p in range(0, 2):  # p == 0 white, 1 black
                 if ptcounts[j * 2 + p] == 0:
                     continue
                 n_empty = len(empties)
@@ -307,14 +350,16 @@ def l2rank(l):
         base *= x
     return ans + o
 
+
 def l2pos(l):
     hands, onboards = l
     board = [[BLANK] * W for _ in range(H)]
     for piece, pos in onboards:
-        #print(f'piece={piece}, pos={pos}, W={W}, H={H}')
+        # print(f'piece={piece}, pos={pos}, W={W}, H={H}')
         y, x = pos % H, pos // H
         board[y][x] = piece
-    return Position(WHITE, board, hands)        
+    return Position(WHITE, board, hands)
+
 
 def pos2l(pos):
     hands = pos.hands
@@ -326,10 +371,12 @@ def pos2l(pos):
     onboards.sort()
     return (hands, onboards)
 
+
 def rank2pos(x):
     return l2pos(rank2l(x))
 
+
 def pos2rank(pos):
     l = pos2l(pos)
-    #print(f'pos.board={pos.board}, l={l}')
+    # print(f'pos.board={pos.board}, l={l}')
     return l2rank(l)

@@ -3,12 +3,14 @@ from minishogi import Ptype
 from research.rank_all import count2N, count_ptype
 from research.rank import canpromote2comb_table, nopromote2comb_table
 
+
 def test_count2N():
-    c =[[[6, 1], [4, 2]], [[6, 1], [5, 2], [3, 2], [2, 2]]]
+    c = [[[6, 1], [4, 2]], [[6, 1], [5, 2], [3, 2], [2, 2]]]
     c = [[(Ptype(pt), v) for pt, v in c[0]], [(Ptype(pt), v) for pt, v in c[1]]]
     ans = count2N(c)
     print(ans)
     assert ans == (4706713151078400, ([2, 3], [92, 3696, 3040, 2448]))
+
 
 def test_count2N_table():
     for n_empty in [10, 15, 20]:

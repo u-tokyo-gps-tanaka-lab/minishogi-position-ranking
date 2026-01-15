@@ -3,8 +3,18 @@ import csv
 from collections import defaultdict
 from heapq import heappush, heappop
 
-from minishogi import Position, generate_previous_positions, BLANK, KING, BLACK, WHITE, W, H
+from minishogi import (
+    Position,
+    generate_previous_positions,
+    BLANK,
+    KING,
+    BLACK,
+    WHITE,
+    W,
+    H,
+)
 from research.paths import output_path
+
 
 def distance_to_KK(pos):
     ans = 0
@@ -26,11 +36,12 @@ def distance_to_KK(pos):
                                 ans += y
                         else:
                             if y < 4:
-                                ans += 4 - y                                
+                                ans += 4 - y
     assert len(kings) == 2
     # if abs(kings[0][0] - kings[1][0]) + abs(kings[0][1] - kings[1][1]) <= 2:
-        # ans += 10
-    return ans        
+    # ans += 10
+    return ans
+
 
 def reconstruct_path(prev, end_pos):
     path = []
@@ -41,6 +52,7 @@ def reconstruct_path(prev, end_pos):
     path.reverse()
     return path
 
+
 def can_reach_KK(pos):
     prev = {}
     q = [(distance_to_KK(pos), pos)]
@@ -50,10 +62,10 @@ def can_reach_KK(pos):
     i = 0
     while len(q) > 0:
         d, pos1 = heappop(q)
-        #if i % 1 == 0:
+        # if i % 1 == 0:
         #    print(f'len(q)={len(q)}, d={d}, pos1={pos1.fen()}')
         i += 1
-        #print(f'd={d}, pos1={pos1.fen()}')
+        # print(f'd={d}, pos1={pos1.fen()}')
         if d == 0:
             path = reconstruct_path(prev, pos1)
             return (True, {"depth": distance[pos1], "path": [p.fen() for p in path]})
@@ -66,6 +78,7 @@ def can_reach_KK(pos):
     path = reconstruct_path(prev, maxpos)
     return (False, {"max_depth": maxdepth, "stuck_path": [p.fen() for p in path]})
 
+
 def load_fen_list(fname):
     ans = []
     with open(fname) as f:
@@ -73,18 +86,23 @@ def load_fen_list(fname):
             pos = Position.from_fen(fen)
             ans.append(pos)
     return ans
+
+
 def save_fen_list(fname, ls):
-    with open(fname, 'w') as wf:
-        wf.write('\n'.join(pos.fen() for pos in ls))
-        wf.write('\n')
+    with open(fname, "w") as wf:
+        wf.write("\n".join(pos.fen() for pos in ls))
+        wf.write("\n")
+
 
 def process_file(filename, parfile=False):
-    file_OK = f'{filename}_OK.txt' if parfile else output_path('reach_OK.txt')
-    file_NG = f'{filename}_NG.txt' if parfile else output_path('reach_NG.txt')
-    file_NG_nocheck = f'{filename}_NG_nocheck.txt' if parfile else output_path('prev_NG_nocheck.txt')
+    file_OK = f"{filename}_OK.txt" if parfile else output_path("reach_OK.txt")
+    file_NG = f"{filename}_NG.txt" if parfile else output_path("reach_NG.txt")
+    file_NG_nocheck = (
+        f"{filename}_NG_nocheck.txt" if parfile else output_path("prev_NG_nocheck.txt")
+    )
     with open(filename) as f:
-        with open(file_OK, 'w', newline='') as wf1:
-            with open(file_NG, 'w', newline='') as wf2:
+        with open(file_OK, "w", newline="") as wf1:
+            with open(file_NG, "w", newline="") as wf2:
                 ok_writer = csv.writer(wf1)
                 ng_writer = csv.writer(wf2)
                 for fen in f.readlines():
@@ -92,7 +110,7 @@ def process_file(filename, parfile=False):
                     if not fen:
                         continue
                     pos = Position.from_fen(fen)
-                    assert pos.side_to_move == WHITE, f'pos={pos.fen()}'
+                    assert pos.side_to_move == WHITE, f"pos={pos.fen()}"
                     ok, info = can_reach_KK(pos)
                     if ok:
                         steps = info["depth"]
@@ -107,6 +125,7 @@ def process_file(filename, parfile=False):
 def main():
     assert len(sys.argv) == 2
     process_file(sys.argv[1], False)
+
 
 if __name__ == "__main__":
     main()

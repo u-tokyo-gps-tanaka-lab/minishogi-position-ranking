@@ -1,8 +1,17 @@
-from minishogi import Position, generate_previous_positions, BLANK, KING, is_promoted, piece2ptype, ZONE_Y_AXIS
+from minishogi import (
+    Position,
+    generate_previous_positions,
+    BLANK,
+    KING,
+    is_promoted,
+    piece2ptype,
+    ZONE_Y_AXIS,
+)
 from heapq import heappush, heappop
 from collections import defaultdict
 import sys
 from research.paths import output_path
+
 
 def distance_to_KK(pos):
     ans = 0
@@ -23,7 +32,8 @@ def distance_to_KK(pos):
     assert len(kings) == 2
     if abs(kings[0][0] - kings[1][0]) + abs(kings[0][1] - kings[1][1]) <= 2:
         ans += 10
-    return ans        
+    return ans
+
 
 def can_reach_KK(pos):
     prev = {}
@@ -34,17 +44,17 @@ def can_reach_KK(pos):
     i = 0
     while len(q) > 0:
         d, pos1 = heappop(q)
-        #if i % 1000 == 0:
+        # if i % 1000 == 0:
         #    print(f'len(q)={len(q)}, d={d}, pos1={pos1.fen()}')
         i += 1
-        #print(f'd={d}, pos1={pos1.fen()}')
+        # print(f'd={d}, pos1={pos1.fen()}')
         if d == 0:
             ans = [pos1]
             while pos1 != pos:
                 pos1 = prev[pos1]
                 ans.append(pos1)
             ans.append(pos)
-            #print(f'len(prev)={len(prev)}')
+            # print(f'len(prev)={len(prev)}')
             return (True, [pos.fen() for pos in ans])
         for pos2 in generate_previous_positions(pos1):
             if pos2 not in prev:
@@ -54,10 +64,11 @@ def can_reach_KK(pos):
     maxd = max((v, k) for k, v in distance.items())
     return (False, (maxd[0], maxd[1].fen()))
 
+
 assert len(sys.argv) == 2
 infname = sys.argv[1]
 prevOK = []
-with open(infname, 'r') as rf:
+with open(infname, "r") as rf:
     for l in rf.readlines():
         prevOK.append(Position(l))
 
@@ -69,22 +80,22 @@ i = 0
 for pos in prevOK:
     ans = can_reach_KK(pos)
     if ans[0] == True:
-        #if i % 100 == 0:
+        # if i % 100 == 0:
         #    print(ans[1])
-        reachOK.append(pos)        
+        reachOK.append(pos)
         okcount[len(ans[1])] += 1
     else:
-        #if i % 100 == 0:
+        # if i % 100 == 0:
         #    print(ans[1])
         reachNG.append(pos)
         ngcount[ans[1]] += 1
-print(f'reachNG={len(reachNG)}, reachOK={len(reachOK)}')
-print(f'reachNG[:10] = {[pos.fen() for pos in reachNG[:10]]}') 
-print(f'reachOK[:10] = {[pos.fen() for pos in reachOK[:10]]}') 
+print(f"reachNG={len(reachNG)}, reachOK={len(reachOK)}")
+print(f"reachNG[:10] = {[pos.fen() for pos in reachNG[:10]]}")
+print(f"reachOK[:10] = {[pos.fen() for pos in reachOK[:10]]}")
 
-with open(output_path(f'reachOK.{infname}.txt'), 'w') as wf:
+with open(output_path(f"reachOK.{infname}.txt"), "w") as wf:
     for pos in reachOK:
-        wf.write(pos.fen() + '\n')
-with open(output_path(f'reachNG.{infname}.txt'), 'w') as wf:
+        wf.write(pos.fen() + "\n")
+with open(output_path(f"reachNG.{infname}.txt"), "w") as wf:
     for pos in reachNG:
-        wf.write(pos.fen() + '\n')
+        wf.write(pos.fen() + "\n")
