@@ -20,7 +20,7 @@ You need to have IPAGothic font in your system to visualize positions.
 ### 1. generate $S_{all}$ and rank its elements
 
 ```bash
-$ rye run python rank_all.py
+$ uv run python rank_all.py
 ```
 
 If the program works correctly, you should see the following outputs and get `count2i.json`. `16014219505238849250` is the number of elements in $S_{all}$.
@@ -52,10 +52,10 @@ $ uv run python rank_to_fen.py ../../research/RN100M.txt
 `rank_to_fen.py` reads the random ranks, generates pseudo-legal positions corresponding to them, and checks if they are identical when flipped horizontally. It creates `flipH_[OK,NG].txt` in default.
 
 ```bash
-$ rye run python check_piece.py ../../research/flipH_OK.txt
-$ rye run python check_king.py ../../research/piece_OK.txt
-$ rye run python check_prev.py ../../research/king_OK.txt
-$ rye run python check_reach.py ../../research/prev_OK.txt
+$ uv run python check_piece.py ../../research/flipH_OK.txt
+$ uv run python check_king.py ../../research/piece_OK.txt
+$ uv run python check_prev.py ../../research/king_OK.txt
+$ uv run python check_reach.py ../../research/prev_OK.txt
 ```
 
 After running these commands, you will be able to estimate the number of reachable positions in Minishogi using interval estimation of the population proportion of $S_{all}$.
